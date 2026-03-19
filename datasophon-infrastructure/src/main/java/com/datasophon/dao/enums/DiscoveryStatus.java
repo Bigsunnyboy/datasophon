@@ -27,6 +27,8 @@ public enum DiscoveryStatus {
     COMPLETED(3, "已完成"),
     FAILED(4, "失败"),
     PARTIAL(5, "部分成功"),
+    STOPPED(6, "已停止"),
+    SUCCESS(7, "成功"),
     ;
     
     @EnumValue

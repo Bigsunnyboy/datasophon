@@ -51,6 +51,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -773,5 +776,240 @@ public class ComponentDiscoveryResultServiceImpl extends ServiceImpl<ComponentDi
         methods.add(customScript);
         
         return methods;
+    }
+    
+    @Override
+    public Result listTasks(Integer page, Integer pageSize, String taskName, String status, String componentType) {
+        try {
+            Page<ComponentDiscoveryResultEntity> pageInfo = new Page<>(page, pageSize);
+            LambdaQueryWrapper<ComponentDiscoveryResultEntity> queryWrapper = new LambdaQueryWrapper<>();
+            
+            if (taskName != null && !taskName.trim().isEmpty()) {
+                // 搜索discoveryTaskId或serviceName
+                queryWrapper.and(wrapper -> wrapper
+                        .like(ComponentDiscoveryResultEntity::getDiscoveryTaskId, taskName.trim())
+                        .or()
+                        .like(ComponentDiscoveryResultEntity::getServiceName, taskName.trim()));
+            }
+            
+            if (status != null && !status.trim().isEmpty()) {
+                try {
+                    DiscoveryStatus discoveryStatus = DiscoveryStatus.valueOf(status.trim());
+                    queryWrapper.eq(ComponentDiscoveryResultEntity::getDiscoveryStatus, discoveryStatus);
+                } catch (IllegalArgumentException e) {
+                    // 如果状态值无效，忽略该条件
+                    log.warn("Invalid discovery status value: {}", status);
+                }
+            }
+            
+            if (componentType != null && !componentType.trim().isEmpty()) {
+                queryWrapper.eq(ComponentDiscoveryResultEntity::getServiceName, componentType.trim());
+            }
+            
+            queryWrapper.orderByDesc(ComponentDiscoveryResultEntity::getCreateTime);
+            
+            IPage<ComponentDiscoveryResultEntity> resultPage = this.page(pageInfo, queryWrapper);
+            
+            // 转换结果以匹配前端期望的字段名
+            List<Map<String, Object>> convertedRecords = new ArrayList<>();
+            for (ComponentDiscoveryResultEntity entity : resultPage.getRecords()) {
+                Map<String, Object> record = new HashMap<>();
+                record.put("id", entity.getId());
+                record.put("taskName", entity.getServiceName() + " - " + entity.getDiscoveryTaskId().substring(0, 8));
+                record.put("clusterName", entity.getClusterName()); // 可能为null
+                record.put("componentType", entity.getServiceName());
+                record.put("discoveryStrategy", entity.getDiscoveryMethod());
+                record.put("status", entity.getDiscoveryStatus() != null ? entity.getDiscoveryStatus().name() : "UNKNOWN");
+                record.put("createTime", entity.getCreateTime());
+                record.put("completeTime", entity.getDiscoveryEndTime());
+                record.put("discoveryTaskId", entity.getDiscoveryTaskId());
+                record.put("clusterId", entity.getClusterId());
+                record.put("serviceName", entity.getServiceName());
+                record.put("discoveryMethod", entity.getDiscoveryMethod());
+                record.put("discoveryStatus", entity.getDiscoveryStatus());
+                convertedRecords.add(record);
+            }
+            
+            Map<String, Object> result = new HashMap<>();
+            result.put("records", convertedRecords);
+            result.put("total", resultPage.getTotal());
+            result.put("page", resultPage.getCurrent());
+            result.put("pageSize", resultPage.getSize());
+            
+            return Result.success().put(Constants.DATA, result);
+        } catch (Exception e) {
+            log.error("Failed to list discovery tasks", e);
+            return Result.error(Status.LIST_DISCOVERY_TASKS_FAILED.getCode(),
+                    Status.LIST_DISCOVERY_TASKS_FAILED.getMsg() + ": " + e.getMessage());
+        }
+    }
+    
+    @Override
+    public Result startTask(String taskName, Integer clusterId, String discoveryStrategy,
+                            List<String> targetHosts, Integer timeoutSeconds, Integer concurrentThreads) {
+        try {
+            ComponentDiscoveryResultEntity task = new ComponentDiscoveryResultEntity();
+            task.setServiceName(taskName); // 使用taskName作为serviceName
+            task.setClusterId(clusterId);
+            task.setDiscoveryMethod(discoveryStrategy);
+            task.setDiscoveryTarget(String.join(",", targetHosts));
+            
+            // 将超时和并发数存储到remark字段
+            Map<String, Object> remarkData = new HashMap<>();
+            remarkData.put("timeoutSeconds", timeoutSeconds);
+            remarkData.put("concurrentThreads", concurrentThreads);
+            remarkData.put("originalTaskName", taskName);
+            task.setRemark(new ObjectMapper().writeValueAsString(remarkData));
+            
+            task.setDiscoveryStatus(DiscoveryStatus.PENDING);
+            task.setCreateTime(new Date());
+            task.setUpdateTime(new Date());
+            task.setDiscoveryTaskId(UUID.randomUUID().toString().replace("-", ""));
+            task.setTriggerType("MANUAL");
+            task.setTriggeredBy("admin"); // TODO: 从上下文中获取当前用户
+            
+            this.save(task);
+            
+            // 异步启动发现任务
+            new Thread(() -> {
+                try {
+                    Thread.sleep(1000); // 模拟启动延迟
+                    task.setDiscoveryStatus(DiscoveryStatus.RUNNING);
+                    task.setDiscoveryStartTime(new Date());
+                    this.updateById(task);
+                    
+                    log.info("Discovery task started: taskId={}, taskName={}", task.getDiscoveryTaskId(), taskName);
+                    
+                    // 模拟任务执行
+                    Thread.sleep(5000);
+                    task.setDiscoveryStatus(DiscoveryStatus.COMPLETED);
+                    task.setDiscoveryEndTime(new Date());
+                    task.setDurationMs(5000L);
+                    task.setDiscoveryStats("{\"totalHosts\": " + targetHosts.size() + ", \"foundComponents\": 3, \"failedHosts\": 0}");
+                    task.setDiscoveryDetails("{\"components\": [{\"name\": \"HDFS\", \"version\": \"3.3.6\", \"hosts\": [\"" + targetHosts.get(0) + "\"]}]}");
+                    this.updateById(task);
+                    
+                } catch (Exception e) {
+                    log.error("Failed to start discovery task: taskId={}", task.getDiscoveryTaskId(), e);
+                    task.setDiscoveryStatus(DiscoveryStatus.FAILED);
+                    task.setErrorMessage("Failed to start task: " + e.getMessage());
+                    task.setDiscoveryEndTime(new Date());
+                    this.updateById(task);
+                }
+            }).start();
+            
+            Map<String, Object> result = new HashMap<>();
+            result.put("taskId", task.getDiscoveryTaskId());
+            result.put("taskName", taskName);
+            result.put("status", "PENDING");
+            result.put("discoveryTaskId", task.getDiscoveryTaskId());
+            
+            return Result.success().put(Constants.DATA, result);
+        } catch (Exception e) {
+            log.error("Failed to start discovery task: taskName={}", taskName, e);
+            return Result.error(Status.START_DISCOVERY_TASK_FAILED.getCode(),
+                    Status.START_DISCOVERY_TASK_FAILED.getMsg() + ": " + e.getMessage());
+        }
+    }
+    
+    @Override
+    public Result stopTask(String taskId) {
+        try {
+            ComponentDiscoveryResultEntity task = this.getByTaskId(taskId);
+            if (task == null) {
+                return Result.error(Status.DISCOVERY_TASK_NOT_FOUND.getCode(), Status.DISCOVERY_TASK_NOT_FOUND.getMsg());
+            }
+            
+            if (task.getDiscoveryStatus() != DiscoveryStatus.RUNNING) {
+                return Result.error(Status.DISCOVERY_TASK_NOT_RUNNING.getCode(), Status.DISCOVERY_TASK_NOT_RUNNING.getMsg());
+            }
+            
+            task.setDiscoveryStatus(DiscoveryStatus.STOPPED);
+            task.setDiscoveryEndTime(new Date());
+            if (task.getDiscoveryStartTime() != null) {
+                task.setDurationMs(System.currentTimeMillis() - task.getDiscoveryStartTime().getTime());
+            }
+            this.updateById(task);
+            
+            log.info("Discovery task stopped: taskId={}, serviceName={}", taskId, task.getServiceName());
+            
+            return Result.success().put(Constants.DATA, task);
+        } catch (Exception e) {
+            log.error("Failed to stop discovery task: taskId={}", taskId, e);
+            return Result.error(Status.STOP_DISCOVERY_TASK_FAILED.getCode(),
+                    Status.STOP_DISCOVERY_TASK_FAILED.getMsg() + ": " + e.getMessage());
+        }
+    }
+    
+    @Override
+    public Result retryTask(String taskId) {
+        try {
+            ComponentDiscoveryResultEntity task = this.getByTaskId(taskId);
+            if (task == null) {
+                return Result.error(Status.DISCOVERY_TASK_NOT_FOUND.getCode(), Status.DISCOVERY_TASK_NOT_FOUND.getMsg());
+            }
+            
+            if (task.getDiscoveryStatus() != DiscoveryStatus.FAILED) {
+                return Result.error(Status.DISCOVERY_TASK_NOT_FAILED.getCode(), Status.DISCOVERY_TASK_NOT_FAILED.getMsg());
+            }
+            
+            task.setDiscoveryStatus(DiscoveryStatus.PENDING);
+            task.setErrorMessage(null);
+            this.updateById(task);
+            
+            // 异步重试任务
+            new Thread(() -> {
+                try {
+                    Thread.sleep(1000); // 模拟启动延迟
+                    task.setDiscoveryStatus(DiscoveryStatus.RUNNING);
+                    task.setDiscoveryStartTime(new Date());
+                    this.updateById(task);
+                    
+                    log.info("Discovery task retried: taskId={}, serviceName={}", taskId, task.getServiceName());
+                    
+                    // 模拟任务执行
+                    Thread.sleep(5000);
+                    task.setDiscoveryStatus(DiscoveryStatus.COMPLETED);
+                    task.setDiscoveryEndTime(new Date());
+                    task.setDurationMs(5000L);
+                    task.setDiscoveryStats("{\"totalHosts\": 3, \"foundComponents\": 2, \"failedHosts\": 0}");
+                    task.setDiscoveryDetails("{\"components\": [{\"name\": \"HDFS\", \"version\": \"3.3.6\", \"hosts\": [\"host1\"]}]}");
+                    this.updateById(task);
+                    
+                } catch (Exception e) {
+                    log.error("Failed to retry discovery task: taskId={}", taskId, e);
+                    task.setDiscoveryStatus(DiscoveryStatus.FAILED);
+                    task.setErrorMessage("Failed to retry task: " + e.getMessage());
+                    task.setDiscoveryEndTime(new Date());
+                    this.updateById(task);
+                }
+            }).start();
+            
+            return Result.success().put(Constants.DATA, task);
+        } catch (Exception e) {
+            log.error("Failed to retry discovery task: taskId={}", taskId, e);
+            return Result.error(Status.RETRY_DISCOVERY_TASK_FAILED.getCode(),
+                    Status.RETRY_DISCOVERY_TASK_FAILED.getMsg() + ": " + e.getMessage());
+        }
+    }
+    
+    @Override
+    public Result deleteTask(String taskId) {
+        try {
+            ComponentDiscoveryResultEntity task = this.getByTaskId(taskId);
+            if (task == null) {
+                return Result.error(Status.DISCOVERY_TASK_NOT_FOUND.getCode(), Status.DISCOVERY_TASK_NOT_FOUND.getMsg());
+            }
+            
+            this.removeById(task.getId());
+            
+            log.info("Discovery task deleted: taskId={}, serviceName={}", taskId, task.getServiceName());
+            
+            return Result.success();
+        } catch (Exception e) {
+            log.error("Failed to delete discovery task: taskId={}", taskId, e);
+            return Result.error(Status.DELETE_DISCOVERY_TASK_FAILED.getCode(),
+                    Status.DELETE_DISCOVERY_TASK_FAILED.getMsg() + ": " + e.getMessage());
+        }
     }
 }

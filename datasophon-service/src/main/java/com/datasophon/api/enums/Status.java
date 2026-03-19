@@ -117,6 +117,16 @@ public enum Status {
     AUTO_REGISTER_DISABLED(20023, "Auto register disabled", "自动注册未启用"),
     NO_DISCOVERY_DETAILS(20024, "No discovery details", "没有发现详情可供注册"),
     AUTO_REGISTER_DISCOVERED_COMPONENTS_FAILED(20025, "Auto register discovered components failed", "自动注册发现的组件失败"),
+    
+    // Component discovery task management errors
+    LIST_DISCOVERY_TASKS_FAILED(20026, "List discovery tasks failed", "获取发现任务列表失败"),
+    START_DISCOVERY_TASK_FAILED(20027, "Start discovery task failed", "启动发现任务失败"),
+    STOP_DISCOVERY_TASK_FAILED(20028, "Stop discovery task failed", "停止发现任务失败"),
+    RETRY_DISCOVERY_TASK_FAILED(20029, "Retry discovery task failed", "重试发现任务失败"),
+    DELETE_DISCOVERY_TASK_FAILED(20030, "Delete discovery task failed", "删除发现任务失败"),
+    DISCOVERY_TASK_NOT_FOUND(20031, "Discovery task not found", "发现任务不存在"),
+    DISCOVERY_TASK_NOT_RUNNING(20032, "Discovery task not running", "发现任务未在运行"),
+    DISCOVERY_TASK_NOT_FAILED(20033, "Discovery task not failed", "发现任务未失败"),
     ;
     
     private final int code;

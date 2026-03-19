@@ -25,6 +25,7 @@ import com.datasophon.dao.entity.ComponentDiscoveryResultEntity;
 import com.datasophon.dao.enums.DiscoveryStatus;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -228,5 +229,66 @@ public class ComponentDiscoveryController {
                                @RequestParam(required = false) String errorMessage) {
         return componentDiscoveryResultService.updateDiscoveryStatus(
                 discoveryTaskId, status, discoveryStats, discoveryDetails, errorMessage);
+    }
+    
+    /**
+     * 获取发现任务列表（分页）
+     */
+    @RequestMapping("/list-tasks")
+    public Result listTasks(@RequestBody Map<String, Object> params) {
+        Integer page = (Integer) params.getOrDefault("page", 1);
+        Integer pageSize = (Integer) params.getOrDefault("pageSize", 10);
+        String taskName = (String) params.get("taskName");
+        String status = (String) params.get("status");
+        String componentType = (String) params.get("componentType");
+        
+        return componentDiscoveryResultService.listTasks(page, pageSize, taskName, status, componentType);
+    }
+    
+    /**
+     * 启动发现任务
+     */
+    @RequestMapping("/start-task")
+    @UserPermission
+    public Result startTask(@RequestBody Map<String, Object> params) {
+        String taskName = (String) params.get("taskName");
+        Integer clusterId = (Integer) params.get("clusterId");
+        String discoveryStrategy = (String) params.get("discoveryStrategy");
+        List<String> targetHosts = (List<String>) params.get("targetHostIds");
+        Integer timeoutSeconds = (Integer) params.get("timeoutSeconds");
+        Integer concurrentThreads = (Integer) params.get("concurrentThreads");
+        
+        return componentDiscoveryResultService.startTask(
+                taskName, clusterId, discoveryStrategy, targetHosts, timeoutSeconds, concurrentThreads);
+    }
+    
+    /**
+     * 停止发现任务
+     */
+    @RequestMapping("/stop-task")
+    @UserPermission
+    public Result stopTask(@RequestBody Map<String, Object> params) {
+        String taskId = (String) params.get("taskId");
+        return componentDiscoveryResultService.stopTask(taskId);
+    }
+    
+    /**
+     * 重试发现任务
+     */
+    @RequestMapping("/retry-task")
+    @UserPermission
+    public Result retryTask(@RequestBody Map<String, Object> params) {
+        String taskId = (String) params.get("taskId");
+        return componentDiscoveryResultService.retryTask(taskId);
+    }
+    
+    /**
+     * 删除发现任务
+     */
+    @RequestMapping("/delete-task")
+    @UserPermission
+    public Result deleteTask(@RequestBody Map<String, Object> params) {
+        String taskId = (String) params.get("taskId");
+        return componentDiscoveryResultService.deleteTask(taskId);
     }
 }

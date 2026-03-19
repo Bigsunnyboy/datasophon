@@ -26,7 +26,7 @@
 -->
 <template>
   <div @click.stop>
-    <a-popover trigger="click" placement="rightTop" class="popover-service" overlayClassName="popover-service" :content="()=> getMoreOptions()">
+    <a-popover ref="serviceOptionPopover" :visible="popoverVisible" trigger="click" placement="rightTop" class="popover-service" overlayClassName="popover-service" :content="()=> getMoreOptions()" @visibleChange="handlePopoverVisibleChange">
       <a-icon type="more" class="cluster-more" style="top: -28px" />
     </a-popover>
     <!-- 配置集群的modal -->
@@ -52,6 +52,7 @@ export default {
       visible: false,
       confirmLoading: false,
       clusterId: Number(localStorage.getItem("clusterId") || -1),
+      popoverVisible: false,
     };
   },
   computed: {
@@ -80,6 +81,9 @@ export default {
       );
     },
     handleMenuClick({ key }) {
+      // 关闭popover
+      this.popoverVisible = false;
+      
       if (key === "addService") {
         this.addService();
       } else if (key === "componentDiscovery") {
@@ -91,6 +95,9 @@ export default {
       } else if (['startAll', 'stopAll', 'restartAll'].includes(key)) {
         this.optServices({ key });
       }
+    },
+    handlePopoverVisibleChange(visible) {
+      this.popoverVisible = visible;
     },
     goToComponentDiscoveryList() {
       // 跳转到组件发现列表页

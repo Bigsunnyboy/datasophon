@@ -56,4 +56,27 @@ export default {
   getClusterInfo: path + '/api/cluster/info/{id}', // 获取集群信息
   getServiceList: path + '/api/frame/service/list', // 获取服务列表
   getAllHosts: path + '/api/cluster/host/all', // 获取集群所有主机
+  
+  // 组件发现任务管理 (新增)
+  listTasks: path + '/api/component/discovery/list-tasks', // 获取发现任务列表
+  startTask: path + '/api/component/discovery/start-task', // 启动发现任务
+  stopTask: path + '/api/component/discovery/stop-task', // 停止发现任务
+  retryTask: path + '/api/component/discovery/retry-task', // 重试发现任务
+  deleteTask: path + '/api/component/discovery/delete-task', // 删除发现任务
+  getTaskDetail: path + '/api/component/discovery/task-detail', // 获取任务详情
+  getTaskResults: path + '/api/component/discovery/task-results', // 获取任务结果
+  getTaskStats: path + '/api/component/discovery/task-stats', // 获取任务统计
+  getTaskHosts: path + '/api/component/discovery/task-hosts', // 获取任务主机列表
+  getTaskProgress: path + '/api/component/discovery/task-progress', // 获取任务进度
+  getTaskLogs: path + '/api/component/discovery/task-logs', // 获取任务日志
+  getPreviewResults: path + '/api/component/discovery/preview-results', // 获取预览结果
+  clearTaskLogs: path + '/api/component/discovery/clear-task-logs', // 清除任务日志
+  exportTaskLogs: path + '/api/component/discovery/export-task-logs', // 导出任务日志
+  exportResults: path + '/api/component/discovery/export-results', // 导出结果
+  validateComponent: path + '/api/component/discovery/validate-component', // 验证组件
+  importComponent: path + '/api/component/discovery/import-component', // 导入组件
+  deleteResult: path + '/api/component/discovery/delete-result', // 删除结果
+  batchValidate: path + '/api/component/discovery/batch-validate', // 批量验证
+  batchImport: path + '/api/component/discovery/batch-import', // 批量导入
+  batchDelete: path + '/api/component/discovery/batch-delete', // 批量删除
 }

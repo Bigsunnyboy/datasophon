@@ -129,4 +129,30 @@ public interface ComponentDiscoveryResultService extends IService<ComponentDisco
      * 获取发现方法列表
      */
     List<Map<String, Object>> getAvailableDiscoveryMethods();
+    
+    /**
+     * 获取发现任务列表（分页）
+     */
+    Result listTasks(Integer page, Integer pageSize, String taskName, String status, String componentType);
+    
+    /**
+     * 启动发现任务（新接口）
+     */
+    Result startTask(String taskName, Integer clusterId, String discoveryStrategy,
+                     List<String> targetHosts, Integer timeoutSeconds, Integer concurrentThreads);
+    
+    /**
+     * 停止发现任务（新接口）
+     */
+    Result stopTask(String taskId);
+    
+    /**
+     * 重试发现任务（新接口）
+     */
+    Result retryTask(String taskId);
+    
+    /**
+     * 删除发现任务（新接口）
+     */
+    Result deleteTask(String taskId);
 }

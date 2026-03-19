@@ -45,6 +45,7 @@
             <groupId>com.datasophon</groupId>
             <artifactId>datasophon-ui</artifactId>
             <version>${project.version}</version>
+            <scope>runtime</scope>
         </dependency>
 
         <dependency>
