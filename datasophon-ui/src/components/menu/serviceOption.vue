@@ -26,7 +26,7 @@
 -->
 <template>
   <div @click.stop>
-    <a-popover trigger="hover" placement="rightTop" class="popover-service" overlayClassName="popover-service" :content="()=> getMoreOptions()">
+    <a-popover trigger="click" placement="rightTop" class="popover-service" overlayClassName="popover-service" :content="()=> getMoreOptions()">
       <a-icon type="more" class="cluster-more" style="top: -28px" />
     </a-popover>
     <!-- 配置集群的modal -->
@@ -65,34 +65,31 @@ export default {
       this.visible = false;
     },
     getMoreOptions() {
-      const arr = [
-        { name: "组件发现", key: "componentDiscovery" },
-        { name: "添加服务", key: "addService" },
-        { name: "启动所有", key: "startAll" },
-        { name: "停止所有", key: "stopAll" },
-        { name: "重启所有需要重启的服务", key: "restartAll" },
-      ];
-      return arr.map((item, index) => {
-        return (
-          <div key={index}>
-            <a
-              class="more-menu-btn"
-              style="border-width:0px;min-width:100px;"
-              onClick={() => this.optionService(item)}
-            >
-              {item.name}
-            </a>
-          </div>
-        );
-      });
+      return (
+        <a-menu mode="vertical" onClick={this.handleMenuClick} class="service-option-menu">
+          <a-sub-menu key="componentManage" title="组件管理">
+            <a-menu-item key="componentDiscovery">组件发现</a-menu-item>
+            <a-menu-item key="componentDiscoveryDetail">组件发现详情</a-menu-item>
+            <a-menu-item key="componentDiscoveryResults">组件发现结果</a-menu-item>
+          </a-sub-menu>
+          <a-menu-item key="addService">添加服务</a-menu-item>
+          <a-menu-item key="startAll">启动所有</a-menu-item>
+          <a-menu-item key="stopAll">停止所有</a-menu-item>
+          <a-menu-item key="restartAll">重启所有需要重启的服务</a-menu-item>
+        </a-menu>
+      );
     },
-    optionService(item) {
-      if (item.key === "addService") {
+    handleMenuClick({ key }) {
+      if (key === "addService") {
         this.addService();
-      } else if (item.key === "componentDiscovery") {
+      } else if (key === "componentDiscovery") {
         this.$router.push('/service-manage/component-discovery');
-      } else if (['startAll', 'stopAll', 'restartAll'].includes(item.key)) {
-        this.optServices({ key: item.key });
+      } else if (key === "componentDiscoveryDetail") {
+        this.goToComponentDiscoveryDetail();
+      } else if (key === "componentDiscoveryResults") {
+        this.goToComponentDiscoveryResults();
+      } else if (['startAll', 'stopAll', 'restartAll'].includes(key)) {
+        this.optServices({ key });
       }
     },
     goToComponentDiscoveryList() {
@@ -107,6 +104,26 @@ export default {
     // 跳转到组件管理
     goToComponentManage() {
       this.$router.push('/service-manage/component-discovery');
+    },
+    // 跳转到组件发现详情页
+    goToComponentDiscoveryDetail() {
+      const lastTaskId = localStorage.getItem('lastComponentDiscoveryTaskId');
+      if (lastTaskId) {
+        this.$router.push(`/service-manage/component-discovery-detail/${lastTaskId}`);
+      } else {
+        this.$router.push('/service-manage/component-discovery');
+        this.$message.info('请先选择组件发现任务查看详情');
+      }
+    },
+    // 跳转到组件发现结果页
+    goToComponentDiscoveryResults() {
+      const lastTaskId = localStorage.getItem('lastComponentDiscoveryTaskId');
+      if (lastTaskId) {
+        this.$router.push(`/service-manage/component-discovery-results/${lastTaskId}`);
+      } else {
+        this.$router.push('/service-manage/component-discovery');
+        this.$message.info('请先选择组件发现任务查看结果');
+      }
     },
     optServices(item) {
       this.$confirm({
@@ -215,5 +232,24 @@ export default {
   }
 }
 
+.service-option-menu {
+  /deep/ .ant-menu-vertical {
+    border: none;
+    box-shadow: none;
+  }
+  /deep/ .ant-menu-submenu-title {
+    padding: 0 16px !important;
+    height: 32px !important;
+    line-height: 32px !important;
+  }
+  /deep/ .ant-menu-item {
+    padding: 0 16px !important;
+    height: 32px !important;
+    line-height: 32px !important;
+    margin: 0 !important;
+  }
+  /deep/ .ant-menu-submenu-arrow {
+    right: 16px !important;
+  }
 }
 </style>

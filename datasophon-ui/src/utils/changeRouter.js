@@ -26,9 +26,13 @@ function changeRouter(resData, clusterId) {
     if (item.path === "service-manage") {
       // 只保留静态路由项，清空所有动态生成的服务实例菜单
       // 动态菜单项路径格式: service-list/1, service-list/2 等
-      // 静态路由项: component-discovery, component-discovery-detail/:taskId 等
+      // 静态路由项: component-discovery, component-discovery-detail/:taskId 等（但应该被过滤掉）
       const staticChildren = item.children.filter(child => 
-        !child.path || !child.path.startsWith('service-list/')
+        !child.path || (
+          !child.path.startsWith('service-list/') && 
+          !child.path.startsWith('component-discovery') &&
+          child.path !== 'component-discovery'
+        )
       );
       // 确保静态路由项有label字段
       staticChildren.forEach(child => {
