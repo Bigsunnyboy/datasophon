@@ -322,7 +322,7 @@ export default {
   methods: {
     // 加载任务信息
     loadTaskInfo() {
-      this.$axiosPost(global.API.componentDiscovery.getTaskDetail, { taskId: this.taskId })
+       this.$axiosJsonPost(global.API.componentDiscovery.getTaskDetail, { taskId: this.taskId })
         .then((res) => {
           if (res.code === 200) {
             this.taskData = res.data || {};
@@ -343,7 +343,7 @@ export default {
         ...this.searchParams,
       };
       
-      this.$axiosPost(global.API.componentDiscovery.getTaskResults, params)
+       this.$axiosJsonPost(global.API.componentDiscovery.getTaskResults, params)
         .then((res) => {
           if (res.code === 200) {
             this.dataSource = res.data.records || [];
@@ -362,7 +362,7 @@ export default {
     
     // 加载发现统计
     loadDiscoveryStats() {
-      this.$axiosPost(global.API.componentDiscovery.getTaskStats, { taskId: this.taskId })
+       this.$axiosJsonPost(global.API.componentDiscovery.getTaskStats, { taskId: this.taskId })
         .then((res) => {
           if (res.code === 200) {
             this.discoveryStats = res.data || {};
@@ -456,7 +456,7 @@ export default {
         content: `确定要验证选中的 ${this.selectedRowKeys.length} 个组件吗？`,
         onOk: () => {
           this.loading = true;
-          this.$axiosPost(global.API.componentDiscovery.batchValidate, {
+           this.$axiosJsonPost(global.API.componentDiscovery.batchValidate, {
             taskId: this.taskId,
             resultIds: this.selectedRowKeys,
           })
@@ -554,7 +554,7 @@ export default {
     },
     
     exportResults() {
-      this.$axiosPost(global.API.componentDiscovery.exportResults, { taskId: this.taskId })
+       this.$axiosJsonPost(global.API.componentDiscovery.exportResults, { taskId: this.taskId })
         .then((res) => {
           if (res.code === 200 && res.data) {
             // 创建下载链接
@@ -587,7 +587,7 @@ export default {
     },
     
     validateComponent(record) {
-      this.$axiosPost(global.API.componentDiscovery.validateComponent, { resultId: record.id })
+       this.$axiosJsonPost(global.API.componentDiscovery.validateComponent, { resultId: record.id })
         .then((res) => {
           if (res.code === 200) {
             this.$message.success("组件验证成功");
@@ -618,7 +618,7 @@ export default {
         title: "导入组件",
         content: `确定要将组件 ${record.componentType} (${record.hostname}:${record.port}) 导入到平台吗？`,
         onOk: () => {
-          this.$axiosPost(global.API.componentDiscovery.importComponent, { resultId: record.id })
+           this.$axiosJsonPost(global.API.componentDiscovery.importComponent, { resultId: record.id })
             .then((res) => {
               if (res.code === 200) {
                 this.$message.success("组件导入成功");
@@ -652,7 +652,7 @@ export default {
         content: `确定要删除组件 ${record.componentType} (${record.hostname}) 的发现结果吗？`,
         okType: "danger",
         onOk: () => {
-          this.$axiosPost(global.API.componentDiscovery.deleteResult, { resultId: record.id })
+           this.$axiosJsonPost(global.API.componentDiscovery.deleteResult, { resultId: record.id })
             .then((res) => {
               if (res.code === 200) {
                 this.$message.success("组件删除成功");

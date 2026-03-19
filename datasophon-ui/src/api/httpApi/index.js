@@ -28,4 +28,4 @@ import componentDiscovery from './componentDiscovery'
 
 
 
-export default {...cluster, ...host, ...user, ...services, ...system, ...componentDiscovery}
+export default {...cluster, ...host, ...user, ...services, ...system, ...componentDiscovery, componentDiscovery}

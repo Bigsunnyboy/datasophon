@@ -294,7 +294,7 @@ export default {
     // 加载任务详情
     loadTaskDetail() {
       this.loading = true;
-      this.$axiosPost(global.API.componentDiscovery.getTaskDetail, { taskId: this.taskId })
+       this.$axiosJsonPost(global.API.componentDiscovery.getTaskDetail, { taskId: this.taskId })
         .then((res) => {
           if (res.code === 200) {
             this.taskData = res.data || {};
@@ -315,7 +315,7 @@ export default {
     loadTargetHosts() {
       if (!this.taskData.clusterId) return;
       
-      this.$axiosPost(global.API.componentDiscovery.getTaskHosts, { taskId: this.taskId })
+       this.$axiosJsonPost(global.API.componentDiscovery.getTaskHosts, { taskId: this.taskId })
         .then((res) => {
           if (res.code === 200) {
             this.targetHosts = res.data || [];
@@ -328,7 +328,7 @@ export default {
     
     // 加载任务进度
     loadTaskProgress() {
-      this.$axiosPost(global.API.componentDiscovery.getTaskProgress, { taskId: this.taskId })
+       this.$axiosJsonPost(global.API.componentDiscovery.getTaskProgress, { taskId: this.taskId })
         .then((res) => {
           if (res.code === 200) {
             const progress = res.data || {};
@@ -352,7 +352,7 @@ export default {
     
     // 加载任务日志
     loadTaskLogs() {
-      this.$axiosPost(global.API.componentDiscovery.getTaskLogs, { taskId: this.taskId, logType: "SUMMARY" })
+       this.$axiosJsonPost(global.API.componentDiscovery.getTaskLogs, { taskId: this.taskId, logType: "SUMMARY" })
         .then((res) => {
           if (res.code === 200) {
             this.summaryLogs = res.data || [];
@@ -362,7 +362,7 @@ export default {
           console.error("加载摘要日志失败:", error);
         });
       
-      this.$axiosPost(global.API.componentDiscovery.getTaskLogs, { taskId: this.taskId, logType: "DETAIL" })
+       this.$axiosJsonPost(global.API.componentDiscovery.getTaskLogs, { taskId: this.taskId, logType: "DETAIL" })
         .then((res) => {
           if (res.code === 200) {
             this.detailLogs = res.data || [];
@@ -372,7 +372,7 @@ export default {
           console.error("加载详细日志失败:", error);
         });
       
-      this.$axiosPost(global.API.componentDiscovery.getTaskLogs, { taskId: this.taskId, logType: "ERROR" })
+       this.$axiosJsonPost(global.API.componentDiscovery.getTaskLogs, { taskId: this.taskId, logType: "ERROR" })
         .then((res) => {
           if (res.code === 200) {
             this.errorLogs = res.data || [];
@@ -385,7 +385,7 @@ export default {
     
     // 加载预览结果
     loadPreviewResults() {
-      this.$axiosPost(global.API.componentDiscovery.getPreviewResults, { taskId: this.taskId, limit: 5 })
+       this.$axiosJsonPost(global.API.componentDiscovery.getPreviewResults, { taskId: this.taskId, limit: 5 })
         .then((res) => {
           if (res.code === 200) {
             this.previewResults = res.data || [];
@@ -457,7 +457,7 @@ export default {
         content: "确定要清空当前任务的所有日志吗？此操作不可恢复。",
         okType: "danger",
         onOk: () => {
-          this.$axiosPost(global.API.componentDiscovery.clearTaskLogs, { taskId: this.taskId })
+           this.$axiosJsonPost(global.API.componentDiscovery.clearTaskLogs, { taskId: this.taskId })
             .then((res) => {
               if (res.code === 200) {
                 this.$message.success("日志已清空");
@@ -476,7 +476,7 @@ export default {
     },
     
     exportLogs() {
-      this.$axiosPost(global.API.componentDiscovery.exportTaskLogs, { taskId: this.taskId })
+       this.$axiosJsonPost(global.API.componentDiscovery.exportTaskLogs, { taskId: this.taskId })
         .then((res) => {
           if (res.code === 200 && res.data) {
             // 创建下载链接
@@ -507,7 +507,7 @@ export default {
         title: "确认停止",
         content: `确定要停止发现任务 "${this.taskData.taskName}" 吗？`,
         onOk: () => {
-          this.$axiosPost(global.API.componentDiscovery.stopTask, { taskId: this.taskId })
+           this.$axiosJsonPost(global.API.componentDiscovery.stopTask, { taskId: this.taskId })
             .then((res) => {
               if (res.code === 200) {
                 this.$message.success("任务已停止");
@@ -524,7 +524,7 @@ export default {
     },
     
     retryTask() {
-      this.$axiosPost(global.API.componentDiscovery.retryTask, { taskId: this.taskId })
+       this.$axiosJsonPost(global.API.componentDiscovery.retryTask, { taskId: this.taskId })
         .then((res) => {
           if (res.code === 200) {
             this.$message.success("任务已重新执行");
@@ -546,7 +546,7 @@ export default {
     },
     
     validateComponent(record) {
-      this.$axiosPost(global.API.componentDiscovery.validateComponent, { resultId: record.id })
+       this.$axiosJsonPost(global.API.componentDiscovery.validateComponent, { resultId: record.id })
         .then((res) => {
           if (res.code === 200) {
             this.$message.success("组件验证成功");

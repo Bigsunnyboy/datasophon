@@ -509,7 +509,7 @@ export default {
       
       this.loading = true;
       try {
-        const res = await this.$axiosPost(global.API.componentDiscovery.startTask, params);
+         const res = await this.$axiosJsonPost(global.API.componentDiscovery.startTask, params);
         
         if (res.code === 200) {
           this.$message.success("发现任务创建成功");

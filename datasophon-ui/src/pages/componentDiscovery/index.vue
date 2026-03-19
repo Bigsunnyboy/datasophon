@@ -235,7 +235,7 @@ export default {
         ...this.searchParams,
       };
       
-      this.$axiosPost(global.API.componentDiscovery.listTasks, params)
+      this.$axiosJsonPost(global.API.componentDiscovery.listTasks, params)
         .then((res) => {
           if (res.code === 200) {
             this.dataSource = res.data.records || [];
@@ -254,7 +254,7 @@ export default {
     
     // 加载集群列表
     loadClusterList() {
-      this.$axiosPost(global.API.cluster.list, {})
+       this.$axiosJsonPost(global.API.cluster.list, {})
         .then((res) => {
           if (res.code === 200) {
             this.clusterList = res.data || [];
@@ -272,7 +272,7 @@ export default {
         return;
       }
       
-      this.$axiosPost(global.API.host.getHostListByClusterId, { clusterId })
+       this.$axiosJsonPost(global.API.host.getHostListByClusterId, { clusterId })
         .then((res) => {
           if (res.code === 200) {
             this.hostList = res.data || [];
@@ -362,7 +362,7 @@ export default {
             targetHostIds: hostIds,
           };
           
-          this.$axiosPost(global.API.componentDiscovery.startTask, params)
+          this.$axiosJsonPost(global.API.componentDiscovery.startTask, params)
             .then((res) => {
               if (res.code === 200) {
                 this.$message.success("发现任务创建成功");
@@ -407,7 +407,7 @@ export default {
         title: "确认停止",
         content: `确定要停止发现任务 "${record.taskName}" 吗？`,
         onOk: () => {
-          this.$axiosPost(global.API.componentDiscovery.stopTask, { taskId: record.id })
+          this.$axiosJsonPost(global.API.componentDiscovery.stopTask, { taskId: record.id })
             .then((res) => {
               if (res.code === 200) {
                 this.$message.success("任务已停止");
@@ -428,7 +428,7 @@ export default {
         title: "确认重试",
         content: `确定要重试发现任务 "${record.taskName}" 吗？`,
         onOk: () => {
-          this.$axiosPost(global.API.componentDiscovery.retryTask, { taskId: record.id })
+          this.$axiosJsonPost(global.API.componentDiscovery.retryTask, { taskId: record.id })
             .then((res) => {
               if (res.code === 200) {
                 this.$message.success("任务已重试");
@@ -449,7 +449,7 @@ export default {
         title: "确认删除",
         content: `确定要删除发现任务 "${record.taskName}" 吗？删除后无法恢复。`,
         onOk: () => {
-          this.$axiosPost(global.API.componentDiscovery.deleteTask, { taskId: record.id })
+          this.$axiosJsonPost(global.API.componentDiscovery.deleteTask, { taskId: record.id })
             .then((res) => {
               if (res.code === 200) {
                 this.$message.success("任务已删除");
