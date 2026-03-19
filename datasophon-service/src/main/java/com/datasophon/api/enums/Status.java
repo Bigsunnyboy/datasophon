@@ -90,6 +90,33 @@ public enum Status {
     NO_SERVICE_ROLE_SELECTED(10041, "No service role selected", "未选择需要安装的服务实例"),
     TWO_KYUUBISERVERS_NEED_TO_BE_DEPLOYED(10042, "two kyuubiServer deployments are required", "KyuubiServer需要两个节点"),
     HOST_EXIT_ONE_INSTALLED_ROLE(10043, "at least one role is installed on the host:", "主机上存在未删除的角色:"),
+    
+    // Existing component management error codes
+    COMPONENT_ALREADY_EXISTS(20001, "Component already exists", "组件已存在"),
+    COMPONENT_NOT_FOUND(20002, "Component not found", "组件未找到"),
+    REGISTER_COMPONENT_FAILED(20003, "Failed to register component", "注册组件失败"),
+    VALIDATE_COMPONENT_FAILED(20004, "Failed to validate component", "验证组件失败"),
+    UPDATE_COMPONENT_STATE_FAILED(20005, "Failed to update component state", "更新组件状态失败"),
+    BATCH_UPDATE_COMPONENT_STATE_FAILED(20006, "Failed to batch update component state", "批量更新组件状态失败"),
+    CHECK_COMPONENT_HEALTH_FAILED(20007, "Failed to check component health", "检查组件健康状态失败"),
+    DISCOVERY_TASK_FAILED(20008, "Failed to execute discovery task", "执行发现任务失败"),
+    SYNC_CONFIG_FAILED(20009, "Failed to sync configuration", "同步配置失败"),
+    CONFIG_ALREADY_ROLLBACKED(20010, "Config already rollbacked", "配置已回滚，无法再次回滚"),
+    ROLLBACK_FAILED(20011, "Rollback failed", "回滚操作失败"),
+    MARK_ROLLBACK_FAILED(20012, "Mark rollback failed", "标记回滚失败"),
+    DELETE_EXPIRED_HISTORY_FAILED(20013, "Delete expired history failed", "删除过期历史记录失败"),
+    ANALYZE_CONFIG_DIFF_FAILED(20014, "Analyze config diff failed", "配置差异分析失败"),
+    VALIDATE_SYNC_RESULT_FAILED(20015, "Validate sync result failed", "同步结果验证失败"),
+    GET_DISCOVERY_PROGRESS_FAILED(20016, "Get discovery progress failed", "获取发现任务进度失败"),
+    DISCOVERY_ALREADY_COMPLETED(20017, "Discovery already completed", "发现任务已完成或已失败，无法取消"),
+    CANCEL_DISCOVERY_TASK_FAILED(20018, "Cancel discovery task failed", "取消发现任务失败"),
+    DELETE_EXPIRED_DISCOVERY_RESULTS_FAILED(20019, "Delete expired discovery results failed", "删除过期发现结果失败"),
+    GET_DISCOVERY_DETAILS_FAILED(20020, "Get discovery details failed", "获取发现结果详情失败"),
+    VALIDATE_DISCOVERY_RESULT_FAILED(20021, "Validate discovery result failed", "验证发现结果失败"),
+    DISCOVERY_NOT_COMPLETED(20022, "Discovery not completed", "发现任务未完成，无法自动注册"),
+    AUTO_REGISTER_DISABLED(20023, "Auto register disabled", "自动注册未启用"),
+    NO_DISCOVERY_DETAILS(20024, "No discovery details", "没有发现详情可供注册"),
+    AUTO_REGISTER_DISCOVERED_COMPONENTS_FAILED(20025, "Auto register discovered components failed", "自动注册发现的组件失败"),
     ;
     
     private final int code;

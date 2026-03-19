@@ -22,6 +22,7 @@ import com.datasophon.common.command.ClusterCommand;
 import com.datasophon.common.command.HostCheckCommand;
 import com.datasophon.common.command.ServiceRoleCheckCommand;
 import com.datasophon.common.enums.ClusterCommandType;
+import com.datasophon.common.utils.HostUtils;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -30,7 +31,6 @@ import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 
-import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -66,7 +66,7 @@ public class ActorUtils {
     }
     
     public static void init() throws UnknownHostException, NoSuchAlgorithmException {
-        String hostname = InetAddress.getLocalHost().getHostName();
+        String hostname = HostUtils.getLocalHostName();
         Config config = ConfigFactory.parseString(AKKA_REMOTE_NETTY_TCP_HOSTNAME + "=" + hostname);
         actorSystem = ActorSystem.create(DATASOPHON, config.withFallback(ConfigFactory.load()));
         actorSystem.actorOf(Props.create(WorkerStartActor.class), getActorRefName(WorkerStartActor.class));

@@ -25,11 +25,11 @@ import com.datasophon.api.utils.SpringTool;
 import com.datasophon.common.Constants;
 import com.datasophon.common.enums.InstallState;
 import com.datasophon.common.model.HostInfo;
+import com.datasophon.common.utils.HostUtils;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.sshd.client.session.ClientSession;
 
-import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Date;
 
@@ -53,7 +53,7 @@ public class StartWorkerHandler implements DispatcherWorkerHandler {
     public boolean handle(ClientSession session, HostInfo hostInfo) throws UnknownHostException {
         ConfigBean configBean = SpringTool.getApplicationContext().getBean(ConfigBean.class);
         String installPath = Constants.INSTALL_PATH;
-        String localHostName = InetAddress.getLocalHost().getHostName();
+        String localHostName = HostUtils.getLocalHostName();
         String updateCommonPropertiesResult = MinaUtils.execCmdWithResult(session,
                 Constants.UPDATE_COMMON_CMD +
                         localHostName +

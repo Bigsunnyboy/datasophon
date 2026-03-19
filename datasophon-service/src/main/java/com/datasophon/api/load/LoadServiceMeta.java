@@ -38,6 +38,7 @@ import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.model.ServiceInfo;
 import com.datasophon.common.model.ServiceRoleInfo;
+import com.datasophon.common.utils.HostUtils;
 import com.datasophon.dao.entity.ClusterInfoEntity;
 import com.datasophon.dao.entity.ClusterServiceInstanceEntity;
 import com.datasophon.dao.entity.ClusterServiceRoleGroupConfig;
@@ -49,7 +50,6 @@ import com.datasophon.dao.entity.FrameServiceRoleEntity;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
-import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -380,7 +380,7 @@ public class LoadServiceMeta implements ApplicationRunner {
                 for (ClusterVariable variable : variables) {
                     globalVariables.put(variable.getVariableName(), variable.getVariableValue());
                 }
-                globalVariables.put("${apiHost}", InetAddress.getLocalHost().getHostName());
+                globalVariables.put("${apiHost}", HostUtils.getLocalHostName());
                 globalVariables.put("${apiPort}", configBean.getServerPort());
                 globalVariables.put("${INSTALL_PATH}", Constants.INSTALL_PATH);
                 

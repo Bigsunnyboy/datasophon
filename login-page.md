@@ -1,0 +1,10 @@
+- generic [ref=e5]:
+  - generic [ref=e8]:
+    - generic [ref=e9]: 账号登录
+    - generic [ref=e10]: DataSophon
+    - generic [ref=e11]:
+      - textbox "输入用户名" [ref=e16]
+      - textbox "输入密码" [ref=e21]
+      - button "登 录" [ref=e26] [cursor=pointer]:
+        - generic: 登 录
+  - generic [ref=e28]: © 2023 DataSophon

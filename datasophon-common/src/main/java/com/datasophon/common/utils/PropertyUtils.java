@@ -72,6 +72,13 @@ public class PropertyUtils {
      * @return property value
      */
     public static String getString(String key) {
+        // First check environment variable
+        String envKey = key.replace('.', '_').toUpperCase();
+        String envValue = System.getenv(envKey);
+        if (envValue != null && !envValue.trim().isEmpty()) {
+            return envValue.trim();
+        }
+        // Fall back to properties file
         return properties.getProperty(key.trim());
     }
     
@@ -93,6 +100,13 @@ public class PropertyUtils {
      * @return property value
      */
     public static String getString(String key, String defaultVal) {
+        // First check environment variable
+        String envKey = key.replace('.', '_').toUpperCase();
+        String envValue = System.getenv(envKey);
+        if (envValue != null && !envValue.trim().isEmpty()) {
+            return envValue.trim();
+        }
+        // Fall back to properties file
         String val = properties.getProperty(key.trim());
         return val == null ? defaultVal : val;
     }

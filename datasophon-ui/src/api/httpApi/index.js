@@ -24,7 +24,8 @@ import host from './host'
 import services from './services'
 import user from './user'
 import system from './system'
+import componentDiscovery from './componentDiscovery'
 
 
 
-export default {...cluster, ...host, ...user, ...services, ...system}
+export default {...cluster, ...host, ...user, ...services, ...system, ...componentDiscovery}

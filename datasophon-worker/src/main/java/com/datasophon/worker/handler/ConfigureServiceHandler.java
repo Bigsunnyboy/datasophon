@@ -22,6 +22,7 @@ import com.datasophon.common.model.Generators;
 import com.datasophon.common.model.RunAs;
 import com.datasophon.common.model.ServiceConfig;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.HostUtils;
 import com.datasophon.common.utils.PlaceholderUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.utils.FreemakerUtils;
@@ -30,7 +31,6 @@ import com.datasophon.worker.utils.TaskConstants;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -79,8 +79,8 @@ public class ConfigureServiceHandler {
         ExecResult execResult = new ExecResult();
         try {
             
-            String hostName = InetAddress.getLocalHost().getHostName();
-            String ip = InetAddress.getLocalHost().getHostAddress();
+            String hostName = HostUtils.getLocalHostName();
+            String ip = HostUtils.getLocalIp();
             HashMap<String, String> paramMap = new HashMap<>();
             paramMap.put("${clusterId}", String.valueOf(clusterId));
             paramMap.put("${host}", hostName);

@@ -65,7 +65,8 @@ export default {
       this.visible = false;
     },
     getMoreOptions() {
-      let arr = [
+      const arr = [
+        { name: "组件发现", key: "componentDiscovery" },
         { name: "添加服务", key: "addService" },
         { name: "启动所有", key: "startAll" },
         { name: "停止所有", key: "stopAll" },
@@ -88,13 +89,24 @@ export default {
     optionService(item) {
       if (item.key === "addService") {
         this.addService();
-      } else {
-        this.optServices(item);
+      } else if (item.key === "componentDiscovery") {
+        this.$router.push('/service-manage/component-discovery');
+      } else if (['startAll', 'stopAll', 'restartAll'].includes(item.key)) {
+        this.optServices({ key: item.key });
       }
+    },
+    goToComponentDiscoveryList() {
+      // 跳转到组件发现列表页
+      this.$router.push('/service-manage/component-discovery');
+      this.$message.info('请从列表中选择任务查看详情或结果');
     },
     // 添加服务
     addService() {
       this.visible = true;
+    },
+    // 跳转到组件管理
+    goToComponentManage() {
+      this.$router.push('/service-manage/component-discovery');
     },
     optServices(item) {
       this.$confirm({
@@ -201,5 +213,7 @@ export default {
   /deep/ .ant-modal-content {
     border-radius: 4px;
   }
+}
+
 }
 </style>

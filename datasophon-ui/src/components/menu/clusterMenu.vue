@@ -56,7 +56,7 @@
               <div class="flex-bewteen-container cluster-menu-item">
                 <div class="flex-container cluster-menu-item-left">
                   <span :class="['circle-point', 'mgr10', subItem.meta.obj? subItem.meta.obj.serviceStateCode === 1 ? 'hide-point' : subItem.meta.obj.serviceStateCode === 2 ? 'success-point': subItem.meta.obj.serviceStateCode === 3 ? 'configured-point': 'error-point' : '']"></span>
-                  <span class="service-name" :style="getServiceClassNameStyle(subItem.meta.obj)" :title="subItem.label">{{subItem.label}}</span>
+                  <span class="service-name" :style="getServiceClassNameStyle(subItem.meta.obj)" :title="subItem.label || subItem.name">{{subItem.label || subItem.name}}</span>
                 </div>
                 <div v-if="subItem.path.includes('service-list')" class="cluster-menu-item-right">
                   <!-- 告警 -->

@@ -4,6 +4,91 @@
   "description": "分布式大数据存储",
   "version": "3.3.6",
   "sortNum": 1,
+  "installationType": "MIXED",
+  "existingComponentSupport": {
+    "detectionMethods": ["PORT_SCAN", "PROCESS_DETECTION", "CONFIG_PARSING"],
+    "validationRules": ["CONNECTIVITY", "FUNCTIONAL", "CONFIGURATION_VALIDITY"],
+    "takeoverCapability": "FULL",
+    "configMergeStrategy": "SMART_MERGE",
+    "supportedVersions": ["3.3.6", "3.2.4", "3.1.4", "3.0.3"],
+    "portMappings": [
+      {
+        "serviceRole": "NameNode",
+        "port": 8020,
+        "protocol": "RPC",
+        "description": "NameNode RPC port",
+        "required": true
+      },
+      {
+        "serviceRole": "NameNode",
+        "port": 9870,
+        "protocol": "HTTP",
+        "description": "NameNode Web UI",
+        "required": true
+      },
+      {
+        "serviceRole": "DataNode",
+        "port": 9864,
+        "protocol": "HTTP",
+        "description": "DataNode Web UI",
+        "required": true
+      },
+      {
+        "serviceRole": "DataNode",
+        "port": 9866,
+        "protocol": "RPC",
+        "description": "DataNode RPC port",
+        "required": true
+      },
+      {
+        "serviceRole": "JournalNode",
+        "port": 8485,
+        "protocol": "RPC",
+        "description": "JournalNode RPC port",
+        "required": true
+      },
+      {
+        "serviceRole": "ZKFC",
+        "port": 8019,
+        "protocol": "RPC",
+        "description": "ZKFC RPC port",
+        "required": true
+      }
+    ],
+    "configFilePaths": [
+      {
+        "path": "etc/hadoop/core-site.xml",
+        "description": "Hadoop core configuration",
+        "required": true,
+        "configType": "XML"
+      },
+      {
+        "path": "etc/hadoop/hdfs-site.xml",
+        "description": "HDFS configuration",
+        "required": true,
+        "configType": "XML"
+      },
+      {
+        "path": "etc/hadoop/hadoop-env.sh",
+        "description": "Hadoop environment variables",
+        "required": false,
+        "configType": "PROPERTIES"
+      }
+    ],
+    "serviceSpecificDetection": {
+      "detectionScript": "",
+      "expectedProcessNames": ["NameNode", "DataNode", "JournalNode", "DFSZKFailoverController"],
+      "expectedConfigPatterns": ["dfs\\.", "ha\\.zookeeper\\.quorum"],
+      "healthChecks": [
+        {
+          "type": "HTTP_CHECK",
+          "target": "http://${host}:9870/dfshealth.html",
+          "timeoutSeconds": 30,
+          "expectedResponse": "200 OK"
+        }
+      ]
+    }
+  },
   "dependencies": [
     "ZOOKEEPER"
   ],

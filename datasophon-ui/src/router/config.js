@@ -44,16 +44,47 @@ const options = {
         isCluster: 'isCluster',
       },
       component: PageView,
-      children: [{
+      children: [      {
         meta: {
           notAlive: true,
+          invisible: true,  // Hidden in menu because it's a route template
           params: {
-            serviceId: ''
+            serviceId: null  // Route template parameter, will be replaced with actual ID
           }
         },
         path: 'service-list/:serviceId',
         name: '服务管理',
+        hidden: true,  // Hidden because it's a route template, not a real menu item
         component: () => import('@/pages/serviceManage/index'),
+      },
+      {
+        meta: {
+          notAlive: true,
+          isCluster: 'isCluster',
+          invisible: true,  // 不在菜单显示，通过serviceOption的三个点菜单访问
+        },
+        path: 'component-discovery',
+        name: '组件发现',
+        label: '组件发现',
+        component: () => import('@/pages/componentDiscovery/index'),
+      },
+      {
+        meta: {
+          notAlive: true,
+        },
+        path: 'component-discovery-detail/:taskId',
+        name: '组件发现详情',
+        hidden: true,
+        component: () => import('@/pages/componentDiscovery/detail'),
+      },
+      {
+        meta: {
+          notAlive: true,
+        },
+        path: 'component-discovery-results/:taskId',
+        name: '组件发现结果',
+        hidden: true,
+        component: () => import('@/pages/componentDiscovery/results'),
       }]
     },
     {

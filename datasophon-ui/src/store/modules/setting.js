@@ -136,7 +136,20 @@ export default {
         }).then((res) => {
           menuData.forEach((item) => {
             if (item.path === "service-manage") {
-              item.children = [];
+              // 只保留静态路由项，清空所有动态生成的服务实例菜单
+              // 动态菜单项路径格式: service-list/1, service-list/2 等
+              // 静态路由项: component-discovery, component-discovery-detail/:taskId 等
+              const staticChildren = item.children.filter(child => 
+                !child.path || !child.path.startsWith('service-list/')
+              );
+              // 确保静态路由项有label字段
+              staticChildren.forEach(child => {
+                if (!child.label && child.name) {
+                  child.label = child.name;
+                }
+              });
+              item.children = staticChildren;
+              
               res.data.map((serviceItem) => {
                 item.children.push({
                   name: serviceItem.serviceName,

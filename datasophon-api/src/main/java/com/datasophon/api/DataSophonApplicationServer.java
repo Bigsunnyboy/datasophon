@@ -20,8 +20,8 @@ package com.datasophon.api;
 import com.datasophon.api.master.ActorUtils;
 import com.datasophon.common.Constants;
 import com.datasophon.common.cache.CacheUtils;
+import com.datasophon.common.utils.HostUtils;
 
-import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.security.NoSuchAlgorithmException;
 
@@ -53,7 +53,7 @@ public class DataSophonApplicationServer extends SpringBootServletInitializer {
     
     @PostConstruct
     public void run() throws UnknownHostException, NoSuchAlgorithmException {
-        String hostName = InetAddress.getLocalHost().getHostName();
+        String hostName = HostUtils.getLocalHostName();
         CacheUtils.put(Constants.HOSTNAME, hostName);
         ActorUtils.init();
     }

@@ -48,4 +48,17 @@ public class ServiceInfo {
     
     private Integer sortNum;
     
+    /**
+     * Installation type: NEW, EXISTING, or MIXED
+     * NEW: Platform will deploy fresh installation
+     * EXISTING: Platform will discover and manage existing components
+     * MIXED: Platform can do both (some nodes new, some existing)
+     */
+    private String installationType;
+    
+    /**
+     * Configuration for existing component support
+     */
+    private ExistingComponentConfig.ExistingComponentSupport existingComponentSupport;
+    
 }

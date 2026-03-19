@@ -24,6 +24,7 @@ import com.datasophon.common.cache.CacheUtils;
 import com.datasophon.common.lifecycle.ServerLifeCycleManager;
 import com.datasophon.common.model.StartWorkerMessage;
 import com.datasophon.common.utils.ExecResult;
+import com.datasophon.common.utils.HostUtils;
 import com.datasophon.common.utils.PropertyUtils;
 import com.datasophon.common.utils.ShellUtils;
 import com.datasophon.worker.actor.RemoteEventActor;
@@ -31,7 +32,6 @@ import com.datasophon.worker.actor.WorkerActor;
 import com.datasophon.worker.utils.ActorUtils;
 import com.datasophon.worker.utils.UnixUtils;
 
-import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -70,7 +70,7 @@ public class WorkerApplicationServer {
     private static final String HADOOP = "hadoop";
     
     public static void main(String[] args) throws UnknownHostException {
-        String hostname = InetAddress.getLocalHost().getHostName();
+        String hostname = HostUtils.getLocalHostName();
         String workDir = System.getProperty(USER_DIR);
         String masterHost = PropertyUtils.getString(MASTER_HOST);
         String cpuArchitecture = ShellUtils.getCpuArchitecture();

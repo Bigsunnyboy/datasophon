@@ -209,7 +209,7 @@ public class InstallServiceImpl implements InstallService {
                                    String host, Integer sshPort, String sshUser, String clusterCode) {
         HostInfo hostInfo = new HostInfo();
         
-        hostInfo.setHostname(HostUtils.getHostName(host));
+        hostInfo.setHostname(host); // 使用用户配置的hostname，而不是解析后的规范主机名
         hostInfo.setIp(HostUtils.getIp(host));
         
         // 判断是否受管
@@ -369,7 +369,7 @@ public class InstallServiceImpl implements InstallService {
             hostInfo.setCreateTime(new Date());
             hostInfo.setErrMsg("");
             hostInfo.setProgress(0);
-
+            
             if (map != null) {
                 map.put(hostname, hostInfo);
                 CacheUtils.put(clusterCode + Constants.HOST_MAP, map);
@@ -435,7 +435,7 @@ public class InstallServiceImpl implements InstallService {
             return Result.error(Status.SELECT_LEAST_ONE_HOST.getMsg());
         }
         ClusterHostService clusterHostService =
-            SpringUtil.getBean(ClusterHostService.class);
+                SpringUtil.getBean(ClusterHostService.class);
         String[] clusterHostIdArray = clusterHostIds.split(Constants.COMMA);
         List<String> clusterHostIdList = Arrays.asList(clusterHostIdArray);
         List<ClusterHostDO> clusterHostList = hostService.getHostListByIds(clusterHostIdList);

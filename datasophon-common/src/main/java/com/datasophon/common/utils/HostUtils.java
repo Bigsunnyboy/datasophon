@@ -17,6 +17,11 @@
 
 package com.datasophon.common.utils;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Map;
@@ -31,6 +36,8 @@ import com.google.common.net.InetAddresses;
  */
 public enum HostUtils {
     ;
+    
+    private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(HostUtils.class);
     
     public static final Pattern HOST_NAME_STR = Pattern.compile("[0-9a-zA-Z-.]{1,64}");
     
@@ -94,6 +101,32 @@ public enum HostUtils {
     }
     
     public static String getLocalHostName() {
+        // 首先尝试从/etc/hostname读取配置的主机名
+        File hostnameFile = new File("/etc/hostname");
+        if (hostnameFile.exists() && hostnameFile.isFile()) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(hostnameFile))) {
+                String hostname = reader.readLine();
+                if (hostname != null && !hostname.trim().isEmpty()) {
+                    return hostname.trim();
+                }
+            } catch (IOException e) {
+                logger.warn("Failed to read /etc/hostname, falling back to hostname command", e);
+            }
+        }
+        // 尝试执行hostname命令
+        try {
+            Process process = Runtime.getRuntime().exec("hostname");
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                String hostname = reader.readLine();
+                if (hostname != null && !hostname.trim().isEmpty()) {
+                    return hostname.trim();
+                }
+            }
+            process.waitFor();
+        } catch (IOException | InterruptedException e) {
+            logger.warn("Failed to execute hostname command, falling back to InetAddress", e);
+        }
+        // 最后回退到InetAddress.getLocalHost()
         try {
             InetAddress ip = InetAddress.getLocalHost();
             return ip.getHostName();
