@@ -1,6 +1,6 @@
 # DataSophon 服务接管功能开发进度跟踪
 
-**文档版本**: 1.5  
+**文档版本**: 1.8  
 **创建日期**: 2026-03-19  
 **最后更新**: 2026-03-20  
 **状态**: 进行中  
@@ -25,8 +25,8 @@ DataSophon 服务接管功能旨在实现对现有大数据组件（HDFS、YARN�
 | 阶段 | 目标 | 完成度 | 状态 | 备注 |
 |------|------|--------|------|------|
 | **阶段一** | 基础发现与注册 | **85%** | 🔄 进行中 | 核心API和UI完成，发现策略全部实现，服务层验证完成 |
-| **阶段二** | 配置管理 | **90%** | 🔄 进行中 | 配置同步管理器框架已完全实现，包含接口、实现类、配置提取器（HDFS/YARN）、配置合并引擎和安全检查；配置管理UI界面和API模块已完成；配置管理控制器、数据库实体、枚举、Mapper和XML映射文件已创建；Swagger API文档生成已配置 |
-| **阶段三** | 运维接管 | **80%** | 🔄 进行中 | ExistingComponentStrategy核心框架已实现，包含接口、抽象类、通用实现和策略上下文；组件发现策略全部实现；运维控制台UI和API模块已开发完成；健康检查引擎（HealthCheckEngine）已实现，支持进程、端口、API、配置和综合检查；日志收集系统（LogCollectorEngine）已实现，提供日志文件管理、实时流式读取、搜索、下载和清理功能 |
+| **阶段二** | 配置管理 | **95%** | 🔄 进行中 | 配置同步管理器框架已完全实现，包含接口、实现类、配置提取器（HDFS/YARN）、配置合并引擎和安全检查；配置管理UI界面和API模块已完成；配置管理控制器、数据库实体、枚举、Mapper和XML映射文件已创建；Swagger API文档生成已配置；配置管理服务已集成真实数据查询，支持分页查询和详情查询 |
+| **阶段三** | 运维接管 | **85%** | 🔄 进行中 | ExistingComponentStrategy核心框架已实现，包含接口、抽象类、通用实现和策略上下文；组件发现策略全部实现；运维控制台UI和API模块已开发完成；健康检查引擎（HealthCheckEngine）已实现，支持进程、端口、API、配置和综合检查；日志收集系统（LogCollectorEngine）已实现，提供日志文件管理、实时流式读取、搜索、下载和清理功能；运维管理数据层集成已完成，包括OperationsManagementEntity实体类、OperationType和OperationStatus枚举、OperationsManagementMapper接口和XML映射文件；数据库迁移脚本已创建 |
 | **阶段四** | 高级功能 | **0%** | ⏳ 未开始 | 尚未开始 |
 
 ### 2.2 详细模块进度
@@ -192,25 +192,93 @@ DataSophon 服务接管功能旨在实现对现有大数据组件（HDFS、YARN�
 
 ## 5. 当前技术债务与问题
 
-### 5.1 已知问题
+### 5.1 已解决技术债务
 
-1. **API封装问题**
+1. **jetty.version属性未定义问题**
+   - **问题**: datasophon-api模块的POM中使用了`${jetty.version}`属性，但父POM中未定义该属性
+   - **影响**: 导致项目编译失败，Maven构建过程中断
+   - **解决方案**: 在父POM的properties部分添加`<jetty.version>9.4.44.v20210927</jetty.version>`属性定义
+   - **状态**: ✅ 已解决 (2026-03-20)
+
+2. **LogCollectorEngine静态方法调用问题**
+   - **问题**: `LogSearchTask.execute()`方法中使用了`new LogCollectorEngine().resolveLogFilePath(...)`，导致不必要的实例创建和潜在的性能问题
+   - **影响**: 代码结构不佳，维护困难
+   - **解决方案**: 将`LogSearchTask`从静态内部类改为非静态内部类，直接在`execute()`方法中调用外部类的`resolveLogFilePath()`方法
+   - **状态**: ✅ 已解决 (2026-03-20)
+
+3. **Java 8兼容性问题（List.of用法）**
+   - **问题**: `ConfigurationManagementServiceImpl`和`OperationsManagementServiceImpl`中使用了Java 9+的`List.of()`方法，项目基于Java 8不支持此语法
+   - **影响**: 编译失败，代码无法在Java 8环境下运行
+   - **解决方案**: 
+     - 添加`java.util.Collections`和`java.util.Arrays`导入
+     - 将`List.of()`替换为`Collections.emptyList()`
+     - 将`List.of("value")`替换为`Arrays.asList("value")`
+   - **状态**: ✅ 已解决 (2026-03-20)
+
+4. **API封装问题**
    - **问题**: 前端API调用未封装，直接使用`$axiosPost`等全局方法
    - **影响**: 代码重复，维护困难，缺乏类型安全
-   - **临时解决**: 已创建BaseService和ComponentDiscoveryService进行初步封装
-   - **长期方案**: 需要全面重构前端API调用层
+   - **解决方案**: 
+     - 创建`BaseService`和`ComponentDiscoveryService`进行API封装
+     - 为`operationsManagement`和`configurationManagement`模块创建专用的API模块文件
+     - 更新`httpApi/index.js`导入配置
+   - **状态**: ✅ 已解决 (2026-03-20)
 
-2. **发现策略实现不全**
-   - **问题**: 协调器接口已定义，但具体发现策略未完全实现
-   - **影响**: 组件发现功能可能无法实际工作
-   - **解决方案**: 需要实现端口扫描、配置解析等核心发现器
-
-3. **数据库扩展未完成**
+5. **数据库扩展未完成问题**
    - **问题**: 仅实现了基础发现结果表，缺少接管管理相关表
    - **影响**: 无法记录组件接管状态、配置同步历史等
-   - **解决方案**: 按设计文档完成所有表结构的创建和扩展
+   - **解决方案**:
+     - 创建`ConfigurationManagementEntity`数据库实体类
+     - 创建`ConfigStatus`和`ConfigSyncStatus`枚举类
+     - 创建`ConfigurationManagementMapper`接口和XML映射文件
+     - 配置表结构支持配置管理的完整功能
+   - **状态**: ✅ 已解决 (2026-03-20)
 
-### 5.2 架构风险
+6. **配置管理服务模拟数据问题**
+   - **问题**: `ConfigurationManagementServiceImpl`使用硬编码的模拟数据，未连接真实数据库
+   - **影响**: 配置管理功能无法实际使用，缺乏数据持久化
+   - **解决方案**:
+     - 添加`ConfigurationManagementMapper`依赖注入
+     - 实现基于数据库的分页查询和详情查询
+     - 使用MyBatis Plus的`IPage`和`Page`进行分页处理
+   - **状态**: ✅ 已解决 (2026-03-20)
+
+7. **数据库迁移脚本缺失问题**
+   - **问题**: 虽然创建了数据库实体，但缺少对应的SQL迁移脚本，导致新功能无法在生产环境部署
+   - **影响**: 部署失败，数据库表结构无法自动创建
+   - **解决方案**:
+     - 创建`t_ddh_configuration_management`表的迁移脚本（V1.3.2__DDL.sql）
+     - 创建`t_ddh_operations_management`表的迁移脚本（V1.3.3__DDL.sql）
+     - 包含完整的表结构定义、索引、注释和视图
+   - **状态**: ✅ 已解决 (2026-03-20)
+
+8. **Spotless代码格式化问题**
+   - **问题**: `OperationsManagementMapper.java`中存在代码缩进格式问题，导致Maven构建失败
+   - **影响**: 项目无法通过`mvn clean compile`编译，Spotless检查失败
+   - **解决方案**: 运行`mvn spotless:apply`命令自动修复代码格式问题
+   - **状态**: ✅ 已解决 (2026-03-20)
+
+9. **MyBatis Plus EnumTypeHandler类找不到问题**
+   - **问题**: 云端部署时出现`ClassNotFoundException: com.baomidou.mybatisplus.extension.handlers.EnumTypeHandler`错误
+   - **影响**: Spring Bean创建失败，应用无法启动
+   - **解决方案**: 从`ConfigurationManagementMapper.xml`和`OperationsManagementMapper.xml`中移除`typeHandler="com.baomidou.mybatisplus.extension.handlers.EnumTypeHandler"`属性引用
+   - **状态**: ✅ 已解决 (2026-03-20)
+
+### 5.2 剩余技术债务
+
+1. **发现策略实现不全**
+   - **问题**: 协调器接口已定义，但部分具体发现策略未完全实现
+   - **影响**: 某些组件的发现功能可能无法实际工作
+   - **解决方案**: 需要实现端口扫描、配置解析等核心发现器
+   - **优先级**: 中等
+
+2. **Spring事务配置错误**
+   - **问题**: 云端部署时出现`BeanCreationException`错误，无法创建`clusterServiceRoleInstanceService` Bean，事务管理配置存在问题
+   - **影响**: 应用启动失败，关键服务无法注入
+   - **解决方案**: 需要检查Spring事务管理配置，修复`ProxyTransactionManagementConfiguration`相关Bean定义
+   - **优先级**: 高
+
+### 5.3 架构风险
 
 1. **配置同步安全性**
    - **风险**: 配置合并可能导致生产环境配置冲突
@@ -287,6 +355,9 @@ DataSophon 服务接管功能旨在实现对现有大数据组件（HDFS、YARN�
 | 2026-03-20 | 1.3 | 修复OperationsManagementService.js API模块未定义错误；创建operationsManagement.js和configurationManagement.js API模块；更新httpApi/index.js导入配置；开发配置管理UI界面和运维控制台UI；更新组件发现页面API封装；验证关键服务existingComponentSupport配置；更新阶段二进度至85%、阶段三进度至65% | 开发团队 |
 | 2026-03-20 | 1.4 | 创建ConfigurationManagementController配置管理控制器；设计并创建ConfigurationManagementEntity数据库实体；创建ConfigStatus和ConfigSyncStatus枚举；创建ConfigurationManagementMapper接口和XML映射文件；配置Swagger API文档生成（OpenApiConfig）；更新阶段二进度至90% | 开发团队 |
 | 2026-03-20 | 1.5 | 实现健康检查引擎（HealthCheckEngine）和日志收集系统（LogCollectorEngine）；创建HealthCheckStatus和HealthCheckType枚举；更新阶段三进度至80% | 开发团队 |
+| 2026-03-20 | 1.6 | 修复jetty.version属性未定义问题；修复LogCollectorEngine中的静态方法调用问题；修复ConfigurationManagementServiceImpl和OperationsManagementServiceImpl中的Java 8兼容性问题（List.of）；集成真实数据查询到ConfigurationManagementServiceImpl，实现数据库分页查询和详情查询；更新阶段二进度至95% | 开发团队 |
+| 2026-03-20 | 1.7 | 创建OperationsManagementEntity实体类、OperationType和OperationStatus枚举；创建OperationsManagementMapper接口和XML映射文件；创建t_ddh_operations_management表的数据库迁移脚本（V1.3.3__DDL.sql）；完成运维管理数据层集成 | 开发团队 |
+| 2026-03-20 | 1.8 | 更新技术债务板块为最新状态，记录数据库迁移脚本创建、Spotless格式化修复、EnumTypeHandler类找不到问题解决；添加Spring事务配置错误为剩余技术债务 | 开发团队 |
 
 ---
 

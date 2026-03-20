@@ -39,8 +39,8 @@
         <result column="recommended_value" property="recommendedValue"/>
         <result column="description" property="description"/>
         <result column="importance_level" property="importanceLevel"/>
-        <result column="config_status" property="configStatus" typeHandler="com.baomidou.mybatisplus.extension.handlers.EnumTypeHandler"/>
-        <result column="sync_status" property="syncStatus" typeHandler="com.baomidou.mybatisplus.extension.handlers.EnumTypeHandler"/>
+        <result column="config_status" property="configStatus"/>
+        <result column="sync_status" property="syncStatus"/>
         <result column="last_sync_time" property="lastSyncTime"/>
         <result column="last_sync_direction" property="lastSyncDirection"/>
         <result column="last_sync_task_id" property="lastSyncTaskId"/>

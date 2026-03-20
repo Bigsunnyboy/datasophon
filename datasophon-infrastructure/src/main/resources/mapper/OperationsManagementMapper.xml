@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~  Licensed to the Apache Software Foundation (ASF) under one or more
+  ~  contributor license agreements.  See the NOTICE file distributed with
+  ~  this work for additional information regarding copyright ownership.
+  ~  The ASF licenses this file to You under the Apache License, Version 2.0
+  ~  (the "License"); you may not use this file except in compliance with
+  ~  the License.  You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing, software
+  ~  distributed under the License is distributed on an "AS IS" BASIS,
+  ~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  See the License for the specific language governing permissions and
+  ~  limitations under the License.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.datasophon.dao.mapper.OperationsManagementMapper">
+
+    <!-- 基础结果映射 -->
+    <resultMap id="BaseResultMap" type="com.datasophon.dao.entity.OperationsManagementEntity">
+        <id column="id" property="id"/>
+        <result column="cluster_id" property="clusterId"/>
+        <result column="service_name" property="serviceName"/>
+        <result column="service_role" property="serviceRole"/>
+        <result column="hostname" property="hostname"/>
+        <result column="existing_component_id" property="existingComponentId"/>
+        <result column="operation_type" property="operationType"/>
+        <result column="operation_sub_type" property="operationSubType"/>
+        <result column="operation_params" property="operationParams"/>
+        <result column="operation_status" property="operationStatus"/>
+        <result column="start_time" property="startTime"/>
+        <result column="end_time" property="endTime"/>
+        <result column="duration_ms" property="durationMs"/>
+        <result column="operation_result" property="operationResult"/>
+        <result column="error_message" property="errorMessage"/>
+        <result column="error_details" property="errorDetails"/>
+        <result column="operator" property="operator"/>
+        <result column="operator_ip" property="operatorIp"/>
+        <result column="session_id" property="sessionId"/>
+        <result column="parent_operation_id" property="parentOperationId"/>
+        <result column="priority" property="priority"/>
+        <result column="retry_count" property="retryCount"/>
+        <result column="max_retry_count" property="maxRetryCount"/>
+        <result column="timeout_ms" property="timeoutMs"/>
+        <result column="async_operation" property="asyncOperation"/>
+        <result column="async_task_id" property="asyncTaskId"/>
+        <result column="remark" property="remark"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <!-- 分页查询运维操作记录 -->
+    <select id="listOperations" resultMap="BaseResultMap">
+        SELECT om.*, ci.cluster_name, CONCAT(ec.service_name, ' - ', ec.service_role) AS service_label
+        FROM t_ddh_operations_management om
+        LEFT JOIN t_ddh_cluster_info ci ON om.cluster_id = ci.id
+        LEFT JOIN t_ddh_cluster_existing_component ec ON om.existing_component_id = ec.id
+        WHERE 1=1
+        <if test="keyword != null and keyword != ''">
+            AND (
+                om.service_name LIKE CONCAT('%', #{keyword}, '%')
+                OR om.service_role LIKE CONCAT('%', #{keyword}, '%')
+                OR om.operation_sub_type LIKE CONCAT('%', #{keyword}, '%')
+                OR om.operator LIKE CONCAT('%', #{keyword}, '%')
+                OR om.operation_result LIKE CONCAT('%', #{keyword}, '%')
+            )
+        </if>
+        <if test="clusterId != null and clusterId != ''">
+            AND om.cluster_id = #{clusterId}
+        </if>
+        <if test="operationType != null and operationType != ''">
+            AND om.operation_type = #{operationType}
+        </if>
+        <if test="operationStatus != null and operationStatus != ''">
+            AND om.operation_status = #{operationStatus}
+        </if>
+        <if test="startDate != null">
+            AND om.create_time >= #{startDate}
+        </if>
+        <if test="endDate != null">
+            AND om.create_time &lt;= #{endDate}
+        </if>
+        ORDER BY om.create_time DESC
+    </select>
+
+    <!-- 根据集群ID查询运维操作 -->
+    <select id="listByClusterId" resultMap="BaseResultMap">
+        SELECT *
+        FROM t_ddh_operations_management
+        WHERE cluster_id = #{clusterId}
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 根据现有组件ID查询运维操作 -->
+    <select id="listByExistingComponentId" resultMap="BaseResultMap">
+        SELECT *
+        FROM t_ddh_operations_management
+        WHERE existing_component_id = #{existingComponentId}
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 根据操作类型查询 -->
+    <select id="listByOperationType" resultMap="BaseResultMap">
+        SELECT *
+        FROM t_ddh_operations_management
+        WHERE cluster_id = #{clusterId}
+          AND operation_type = #{operationType}
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 根据操作状态查询 -->
+    <select id="listByOperationStatus" resultMap="BaseResultMap">
+        SELECT *
+        FROM t_ddh_operations_management
+        WHERE cluster_id = #{clusterId}
+          AND operation_status = #{operationStatus}
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 查询待执行的运维操作 -->
+    <select id="listPendingOperations" resultMap="BaseResultMap">
+        SELECT *
+        FROM t_ddh_operations_management
+        WHERE cluster_id = #{clusterId}
+          AND operation_status = 'PENDING'
+        ORDER BY priority DESC, create_time ASC
+    </select>
+
+    <!-- 查询执行中的运维操作 -->
+    <select id="listRunningOperations" resultMap="BaseResultMap">
+        SELECT *
+        FROM t_ddh_operations_management
+        WHERE cluster_id = #{clusterId}
+          AND operation_status = 'RUNNING'
+        ORDER BY start_time ASC
+    </select>
+
+    <!-- 查询失败的运维操作 -->
+    <select id="listFailedOperations" resultMap="BaseResultMap">
+        SELECT *
+        FROM t_ddh_operations_management
+        WHERE cluster_id = #{clusterId}
+          AND operation_status = 'FAILED'
+          AND create_time >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 更新操作状态 -->
+    <update id="updateOperationStatus">
+        UPDATE t_ddh_operations_management
+        SET operation_status = #{operationStatus},
+            operation_result = #{operationResult},
+            error_message = #{errorMessage},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 更新操作结束时间和耗时 -->
+    <update id="updateOperationCompletion">
+        UPDATE t_ddh_operations_management
+        SET operation_status = #{operationStatus},
+            end_time = #{endTime},
+            duration_ms = #{durationMs},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 批量更新操作状态 -->
+    <update id="batchUpdateOperationStatus">
+        UPDATE t_ddh_operations_management
+        SET operation_status = #{operationStatus},
+            update_time = NOW()
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <!-- 获取运维操作统计信息 -->
+    <select id="getOperationStatsByCluster" resultType="java.util.Map">
+        SELECT 
+            operation_status AS status,
+            COUNT(*) AS count,
+            COUNT(CASE WHEN operation_type = 'SERVICE_CONTROL' THEN 1 END) AS service_control_count,
+            COUNT(CASE WHEN operation_type = 'HEALTH_CHECK' THEN 1 END) AS health_check_count,
+            COUNT(CASE WHEN operation_type = 'LOG_MANAGEMENT' THEN 1 END) AS log_management_count,
+            COUNT(CASE WHEN operation_type = 'CONFIG_SYNC' THEN 1 END) AS config_sync_count,
+            COUNT(CASE WHEN priority >= 8 THEN 1 END) AS high_priority_count
+        FROM t_ddh_operations_management
+        WHERE cluster_id = #{clusterId}
+        GROUP BY operation_status
+    </select>
+
+    <!-- 获取操作类型统计信息 -->
+    <select id="getOperationTypeStats" resultType="java.util.Map">
+        SELECT 
+            operation_type AS type,
+            COUNT(*) AS total_count,
+            COUNT(CASE WHEN operation_status = 'SUCCESS' THEN 1 END) AS success_count,
+            COUNT(CASE WHEN operation_status = 'FAILED' THEN 1 END) AS failed_count,
+            COUNT(CASE WHEN operation_status = 'RUNNING' THEN 1 END) AS running_count,
+            AVG(duration_ms) AS avg_duration_ms,
+            MAX(duration_ms) AS max_duration_ms,
+            MIN(duration_ms) AS min_duration_ms
+        FROM t_ddh_operations_management
+        WHERE cluster_id = #{clusterId}
+          AND create_time >= DATE_SUB(NOW(), INTERVAL #{days} DAY)
+        GROUP BY operation_type
+    </select>
+
+    <!-- 获取操作成功率统计 -->
+    <select id="getOperationSuccessRate" resultType="java.util.Map">
+        SELECT 
+            DATE(create_time) AS operation_date,
+            operation_type AS type,
+            COUNT(*) AS total_count,
+            COUNT(CASE WHEN operation_status = 'SUCCESS' THEN 1 END) AS success_count,
+            ROUND(COUNT(CASE WHEN operation_status = 'SUCCESS' THEN 1 END) * 100.0 / COUNT(*), 2) AS success_rate
+        FROM t_ddh_operations_management
+        WHERE cluster_id = #{clusterId}
+          AND create_time >= #{startDate}
+          AND create_time &lt;= #{endDate}
+        GROUP BY DATE(create_time), operation_type
+        ORDER BY DATE(create_time) DESC
+    </select>
+
+    <!-- 获取平均操作耗时统计 -->
+    <select id="getAvgOperationDuration" resultType="java.util.Map">
+        SELECT 
+            operation_type AS type,
+            operation_sub_type AS sub_type,
+            COUNT(*) AS count,
+            AVG(duration_ms) AS avg_duration_ms,
+            MAX(duration_ms) AS max_duration_ms,
+            MIN(duration_ms) AS min_duration_ms,
+            PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY duration_ms) AS median_duration_ms
+        FROM t_ddh_operations_management
+        WHERE cluster_id = #{clusterId}
+          AND operation_status IN ('SUCCESS', 'FAILED')
+          AND duration_ms IS NOT NULL
+          <if test="operationType != null and operationType != ''">
+          AND operation_type = #{operationType}
+          </if>
+        GROUP BY operation_type, operation_sub_type
+        ORDER BY avg_duration_ms DESC
+    </select>
+
+</mapper>

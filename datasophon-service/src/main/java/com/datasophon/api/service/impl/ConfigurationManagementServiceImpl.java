@@ -18,9 +18,9 @@
 package com.datasophon.api.service.impl;
 
 import com.datasophon.api.service.ConfigurationManagementService;
+import com.datasophon.common.utils.Result;
 import com.datasophon.dao.entity.ConfigurationManagementEntity;
 import com.datasophon.dao.mapper.ConfigurationManagementMapper;
-import com.datasophon.common.utils.Result;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,7 +32,11 @@ import java.util.UUID;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 /**
  * 配置管理服务实现类
@@ -49,27 +53,31 @@ public class ConfigurationManagementServiceImpl implements ConfigurationManageme
         log.info("获取配置列表: page={}, pageSize={}, keyword={}, clusterId={}, configStatus={}",
                 page, pageSize, keyword, clusterId, configStatus);
         
-        // 模拟数据
+        // 使用真实数据查询
+        Page<ConfigurationManagementEntity> pageObj = new Page<>(page != null ? page : 1, pageSize != null ? pageSize : 10);
+        IPage<ConfigurationManagementEntity> pageResult = configurationManagementMapper.listConfigurations(pageObj, keyword, clusterId, configStatus);
+        
+        // 转换为前端所需格式
         List<Map<String, Object>> configurations = new ArrayList<>();
-        for (int i = 1; i <= 10; i++) {
+        for (ConfigurationManagementEntity entity : pageResult.getRecords()) {
             Map<String, Object> config = new HashMap<>();
-            config.put("id", "config-" + i);
-            config.put("componentName", "HDFS-" + i);
-            config.put("clusterName", "cluster-" + (i % 3 + 1));
-            config.put("serviceType", "HDFS");
-            config.put("configStatus", i % 3 == 0 ? "IDENTICAL" : i % 3 == 1 ? "DIFFERENT" : "UNKNOWN");
-            config.put("syncStatus", i % 4 == 0 ? "IDLE" : i % 4 == 1 ? "SYNCING" : i % 4 == 2 ? "SUCCESS" : "FAILED");
-            config.put("lastSyncTime", "2026-03-20 10:00:00");
-            config.put("existingConfig", "hadoop.core.site.xml content");
-            config.put("datasophonConfig", "hadoop.core.site.xml content with modifications");
+            config.put("id", entity.getId());
+            config.put("componentName", entity.getServiceName() + " - " + entity.getServiceRole());
+            config.put("clusterName", entity.getClusterName());
+            config.put("serviceType", entity.getServiceName());
+            config.put("configStatus", entity.getConfigStatus() != null ? entity.getConfigStatus().getDesc() : "UNKNOWN");
+            config.put("syncStatus", entity.getSyncStatus() != null ? entity.getSyncStatus().getDesc() : "IDLE");
+            config.put("lastSyncTime", entity.getLastSyncTime());
+            config.put("existingConfig", entity.getCurrentValue());
+            config.put("datasophonConfig", entity.getPlatformValue());
             configurations.add(config);
         }
         
         Map<String, Object> result = new HashMap<>();
         result.put("data", configurations);
-        result.put("total", 45);
-        result.put("page", page);
-        result.put("pageSize", pageSize);
+        result.put("total", pageResult.getTotal());
+        result.put("page", page != null ? page : 1);
+        result.put("pageSize", pageSize != null ? pageSize : 10);
         
         return Result.success(result);
     }
@@ -78,21 +86,33 @@ public class ConfigurationManagementServiceImpl implements ConfigurationManageme
     public Result getConfigurationDetail(String configId) {
         log.info("获取配置详情: configId={}", configId);
         
-        Map<String, Object> config = new HashMap<>();
-        config.put("id", configId);
-        config.put("componentName", "HDFS-NameNode");
-        config.put("clusterName", "cluster-1");
-        config.put("serviceType", "HDFS");
-        config.put("configStatus", "DIFFERENT");
-        config.put("syncStatus", "IDLE");
-        config.put("lastSyncTime", "2026-03-20 10:00:00");
-        config.put("existingConfig", "hadoop.core.site.xml content from existing component");
-        config.put("datasophonConfig", "hadoop.core.site.xml content from DataSophon");
-        config.put("configPath", "/etc/hadoop/conf/core-site.xml");
-        config.put("lastModified", "2026-03-20 09:30:00");
-        config.put("modifiedBy", "system");
-        
-        return Result.success(config);
+        try {
+            Integer id = Integer.parseInt(configId);
+            ConfigurationManagementEntity entity = configurationManagementMapper.selectById(id);
+            
+            if (entity == null) {
+                return Result.error("配置项不存在");
+            }
+            
+            Map<String, Object> config = new HashMap<>();
+            config.put("id", entity.getId());
+            config.put("componentName", entity.getServiceName() + " - " + entity.getServiceRole());
+            config.put("clusterName", entity.getClusterName());
+            config.put("serviceType", entity.getServiceName());
+            config.put("configStatus", entity.getConfigStatus() != null ? entity.getConfigStatus().getDesc() : "UNKNOWN");
+            config.put("syncStatus", entity.getSyncStatus() != null ? entity.getSyncStatus().getDesc() : "IDLE");
+            config.put("lastSyncTime", entity.getLastSyncTime());
+            config.put("existingConfig", entity.getCurrentValue());
+            config.put("datasophonConfig", entity.getPlatformValue());
+            config.put("configPath", entity.getConfigFilePath());
+            config.put("lastModified", entity.getUpdateTime());
+            config.put("modifiedBy", entity.getOperator());
+            
+            return Result.success(config);
+        } catch (NumberFormatException e) {
+            log.error("配置ID格式错误: {}", configId, e);
+            return Result.error("配置ID格式错误");
+        }
     }
     
     @Override
