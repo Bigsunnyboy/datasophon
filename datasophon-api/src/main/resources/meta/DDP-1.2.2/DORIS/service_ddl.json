@@ -3,6 +3,7 @@
   "label": "Doris",
   "description": "简单易用、高性能和统一的分析数据库",
   "version": "2.0.7",
+  "existingComponentSupport": true,
   "sortNum": 20,
   "dependencies":[],
   "packageName": "apache-doris-2.0.7-bin-x64.tar.gz",

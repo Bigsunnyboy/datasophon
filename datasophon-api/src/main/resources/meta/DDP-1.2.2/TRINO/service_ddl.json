@@ -4,6 +4,69 @@
   "description": "分布式SQL交互式查询引擎",
   "version": "367",
   "sortNum": 9,
+  "existingComponentSupport": {
+    "detectionMethods": ["PORT_SCAN", "PROCESS_DETECTION", "CONFIG_PARSING"],
+    "validationRules": ["CONNECTIVITY", "FUNCTIONAL", "CONFIGURATION_VALIDITY"],
+    "takeoverCapability": "FULL",
+    "configMergeStrategy": "SMART_MERGE",
+    "supportedVersions": ["367", "368", "369"],
+    "portMappings": [
+      {
+        "serviceRole": "TrinoCoordinator",
+        "port": 8086,
+        "protocol": "HTTP",
+        "description": "Trino Coordinator Web UI",
+        "required": true
+      },
+      {
+        "serviceRole": "TrinoCoordinator",
+        "port": 8087,
+        "protocol": "JMX",
+        "description": "Trino Coordinator JMX",
+        "required": true
+      },
+      {
+        "serviceRole": "TrinoWorker",
+        "port": 8089,
+        "protocol": "JMX",
+        "description": "Trino Worker JMX",
+        "required": true
+      }
+    ],
+    "configFilePaths": [
+      {
+        "path": "etc/config.properties",
+        "description": "Trino主配置文件",
+        "required": true,
+        "configType": "PROPERTIES"
+      },
+      {
+        "path": "etc/jvm.config",
+        "description": "JVM配置",
+        "required": false,
+        "configType": "PROPERTIES"
+      },
+      {
+        "path": "etc/node.properties",
+        "description": "节点配置",
+        "required": true,
+        "configType": "PROPERTIES"
+      }
+    ],
+    "serviceSpecificDetection": {
+      "detectionScript": "",
+      "expectedProcessNames": ["TrinoCoordinator", "TrinoWorker"],
+      "expectedConfigPatterns": ["coordinator", "http-server\\.http\\.port", "discovery\\.uri"],
+      "healthChecks": [
+        {
+          "type": "HTTP_CHECK",
+          "target": "http://${host}:8086/v1/info",
+          "timeoutSeconds": 30,
+          "expectedResponse": "200 OK"
+        }
+      ]
+    }
+  },
   "dependencies": [],
   "packageName": "trino-367.tar.gz",
   "decompressPackageName": "trino-367",

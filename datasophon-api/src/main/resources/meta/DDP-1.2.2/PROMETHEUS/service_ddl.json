@@ -4,6 +4,77 @@
   "description": "高性能监控指标采集与告警系统",
   "version": "2.17.2",
   "sortNum": 16,
+  "installationType": "MIXED",
+  "existingComponentSupport": {
+    "detectionMethods": ["PORT_SCAN", "PROCESS_DETECTION", "CONFIG_PARSING", "API_QUERY"],
+    "validationRules": ["CONNECTIVITY", "FUNCTIONAL", "CONFIGURATION_VALIDITY"],
+    "takeoverCapability": "FULL",
+    "configMergeStrategy": "SMART_MERGE",
+    "supportedVersions": ["2.17.2", "2.37.0", "2.36.0", "2.35.0", "2.34.0", "2.33.0"],
+    "portMappings": [
+      {
+        "serviceRole": "Prometheus",
+        "port": 9090,
+        "protocol": "HTTP",
+        "description": "Prometheus HTTP API and Web UI",
+        "required": true
+      },
+      {
+        "serviceRole": "Prometheus",
+        "port": 9093,
+        "protocol": "HTTP",
+        "description": "AlertManager HTTP API",
+        "required": false
+      }
+    ],
+    "configFilePaths": [
+      {
+        "path": "prometheus.yml",
+        "description": "Prometheus main configuration",
+        "required": true,
+        "configType": "YAML"
+      },
+      {
+        "path": "alert.rules",
+        "description": "Prometheus alerting rules",
+        "required": false,
+        "configType": "YAML"
+      },
+      {
+        "path": "prometheus.env",
+        "description": "Prometheus environment variables",
+        "required": false,
+        "configType": "PROPERTIES"
+      },
+      {
+        "path": "prometheus.sh",
+        "description": "Prometheus startup script",
+        "required": false,
+        "configType": "SHELL"
+      }
+    ],
+    "serviceSpecificDetection": {
+      "detectionScript": "",
+      "expectedProcessNames": ["prometheus", "Prometheus"],
+      "expectedConfigPatterns": ["scrape_configs", "alerting", "rule_files", "global\\."],
+      "healthChecks": [
+        {
+          "type": "HTTP_CHECK",
+          "target": "http://${host}:9090/-/ready",
+          "timeoutSeconds": 30,
+          "expectedResponse": "200 OK"
+        },
+        {
+          "type": "HTTP_CHECK",
+          "target": "http://${host}:9090/api/v1/query?query=up",
+          "timeoutSeconds": 30,
+          "expectedResponse": "200 OK",
+          "jsonPath": "$.data.result[0].value[1]",
+          "expectedValue": "1"
+        }
+      ]
+    }
+  },
   "dependencies":[],
   "packageName": "prometheus-2.17.2.tar.gz",
   "decompressPackageName": "prometheus-2.17.2",

@@ -110,6 +110,65 @@
           <div v-else>
             <a-alert message="任务待执行" type="info" show-icon />
           </div>
+         </a-card>
+        
+        <!-- 接管进度 -->
+        <a-card title="接管进度" class="card-shadow mgb16" v-if="taskData.status === 'SUCCESS' && takeoverStats">
+          <div class="takeover-progress">
+            <div class="progress-stats mgb16">
+              <a-row :gutter="16">
+                <a-col :span="6">
+                  <div class="stat-card">
+                    <div class="stat-number">{{ takeoverStats.total || 0 }}</div>
+                    <div class="stat-label">总组件数</div>
+                  </div>
+                </a-col>
+                <a-col :span="6">
+                  <div class="stat-card">
+                    <div class="stat-number" style="color: #1890ff;">{{ takeoverStats.validated || 0 }}</div>
+                    <div class="stat-label">已验证</div>
+                  </div>
+                </a-col>
+                <a-col :span="6">
+                  <div class="stat-card">
+                    <div class="stat-number" style="color: #52c41a;">{{ takeoverStats.registered || 0 }}</div>
+                    <div class="stat-label">已注册</div>
+                  </div>
+                </a-col>
+                <a-col :span="6">
+                  <div class="stat-card">
+                    <div class="stat-number" style="color: #722ed1;">{{ takeoverStats.managed || 0 }}</div>
+                    <div class="stat-label">已接管</div>
+                  </div>
+                </a-col>
+              </a-row>
+            </div>
+            
+            <div class="takeover-levels mgb16">
+              <h4>接管级别分布</h4>
+              <a-row :gutter="16" class="mgt8">
+                <a-col :span="6" v-for="level in takeoverLevels" :key="level.value">
+                  <div class="level-card" :class="`level-${level.value.toLowerCase()}`">
+                    <div class="level-name">{{ level.label }}</div>
+                    <div class="level-count">{{ takeoverLevelStats[level.value] || 0 }}</div>
+                    <div class="level-percent">{{ getLevelPercent(level.value) }}%</div>
+                  </div>
+                </a-col>
+              </a-row>
+            </div>
+            
+            <div class="takeover-actions">
+              <a-button type="primary" @click="startTakeoverProcess" :disabled="!hasValidatedComponents">
+                开始接管流程
+              </a-button>
+              <a-button @click="viewTakeoverResults" class="mgl12" :disabled="!hasTakeoverProgress">
+                查看接管结果
+              </a-button>
+              <a-button @click="refreshTakeoverStats" icon="reload" class="mgl12">
+                刷新统计
+              </a-button>
+            </div>
+          </div>
         </a-card>
         
         <a-card title="执行日志" class="card-shadow">
@@ -235,9 +294,18 @@ export default {
         { title: "主机", dataIndex: "hostname", key: "hostname" },
         { title: "组件类型", dataIndex: "componentType", key: "componentType" },
         { title: "版本", dataIndex: "version", key: "version" },
-        { title: "端口", dataIndex: "port", key: "port" },
+         { title: "端口", dataIndex: "port", key: "port" },
         { title: "状态", dataIndex: "status", key: "status", scopedSlots: { customRender: "status" } },
         { title: "操作", key: "action", scopedSlots: { customRender: "action" }, width: 120 },
+      ],
+      // 接管进度相关数据
+      takeoverStats: null,
+      takeoverLevelStats: {},
+      takeoverLevels: [
+        { value: "MONITOR_ONLY", label: "只读监控", color: "#1890ff" },
+        { value: "CONFIGURATION", label: "配置管理", color: "#52c41a" },
+        { value: "CONTROL", label: "操作控制", color: "#faad14" },
+        { value: "FULL", label: "完全接管", color: "#722ed1" },
       ],
     };
   },
@@ -259,6 +327,13 @@ export default {
     canRetryTask() {
       return this.taskData.status === "FAILED";
     },
+    // 接管进度相关计算属性
+    hasValidatedComponents() {
+      return this.takeoverStats && this.takeoverStats.validated > 0;
+    },
+    hasTakeoverProgress() {
+      return this.takeoverStats && (this.takeoverStats.registered > 0 || this.takeoverStats.managed > 0);
+    },
   },
   watch: {
     autoRefresh(val) {
@@ -268,31 +343,128 @@ export default {
         this.stopAutoRefresh();
       }
     },
-    refreshInterval() {
-      if (this.autoRefresh) {
-        this.stopAutoRefresh();
-        this.startAutoRefresh();
-      }
-    },
-  },
-  mounted() {
-    this.taskId = this.$route.params.taskId;
-    if (this.taskId) {
-      this.loadTaskDetail();
-      this.loadTaskProgress();
-      this.loadTaskLogs();
-      this.loadPreviewResults();
-    } else {
-      this.$message.error("任务ID不存在");
-      this.goBack();
-    }
-  },
+     refreshInterval() {
+       if (this.autoRefresh) {
+         this.stopAutoRefresh();
+         this.startAutoRefresh();
+       }
+     },
+     // 监听任务状态变化，当任务成功时加载接管统计
+     'taskData.status': function(newStatus) {
+       if (newStatus === 'SUCCESS') {
+         this.$nextTick(() => {
+           this.loadTakeoverStats();
+         });
+       }
+     },
+   },
+   mounted() {
+     this.taskId = this.$route.params.taskId;
+     if (this.taskId) {
+       this.loadTaskDetail();
+       this.loadTaskProgress();
+       this.loadTaskLogs();
+       this.loadPreviewResults();
+       // 加载接管统计（仅当任务成功时）
+       this.$nextTick(() => {
+         if (this.taskData.status === 'SUCCESS') {
+           this.loadTakeoverStats();
+         }
+       });
+     } else {
+       this.$message.error("任务ID不存在");
+       this.goBack();
+     }
+   },
   beforeDestroy() {
     this.stopAutoRefresh();
   },
-  methods: {
-    // 加载任务详情
-    loadTaskDetail() {
+   methods: {
+     // 加载接管统计
+     loadTakeoverStats() {
+       if (!this.taskId || this.taskData.status !== 'SUCCESS') {
+         return;
+       }
+       
+       // TODO: 实现接管统计API
+       // 临时模拟数据
+       console.log('加载接管统计，任务ID:', this.taskId);
+       
+       // 模拟API调用
+       setTimeout(() => {
+         this.takeoverStats = {
+           total: 15,
+           discovered: 15,
+           validated: 10,
+           registered: 7,
+           managed: 3,
+           deregistered: 0
+         };
+         
+         this.takeoverLevelStats = {
+           MONITOR_ONLY: 5,
+           CONFIGURATION: 4,
+           CONTROL: 3,
+           FULL: 3
+         };
+       }, 500);
+       
+       // 实际API调用（后端实现后取消注释）
+       /*
+       this.$axiosJsonPost(global.API.componentDiscovery.getTakeoverStats, { taskId: this.taskId })
+         .then((res) => {
+           if (res.code === 200) {
+             this.takeoverStats = res.data.stats || {};
+             this.takeoverLevelStats = res.data.levelStats || {};
+           }
+         })
+         .catch((error) => {
+           console.error("加载接管统计失败:", error);
+         });
+       */
+     },
+     
+     // 获取级别百分比
+     getLevelPercent(level) {
+       if (!this.takeoverStats || !this.takeoverStats.total || this.takeoverStats.total === 0) {
+         return 0;
+       }
+       const count = this.takeoverLevelStats[level] || 0;
+       return Math.round((count / this.takeoverStats.total) * 100);
+     },
+     
+     // 开始接管流程
+     startTakeoverProcess() {
+       this.$confirm({
+         title: "开始接管流程",
+         content: "确定要开始接管已验证的组件吗？系统将根据接管级别逐步管理组件。",
+         onOk: () => {
+           // TODO: 实现开始接管API
+           console.log('开始接管流程，任务ID:', this.taskId);
+           
+           // 模拟API调用
+           setTimeout(() => {
+             this.$message.success("接管流程已启动");
+             this.loadTakeoverStats(); // 刷新统计
+           }, 500);
+         },
+       });
+     },
+     
+     // 查看接管结果
+     viewTakeoverResults() {
+       // 跳转到接管结果页面或显示详细信息
+       this.$message.info("接管结果查看功能开发中");
+     },
+     
+     // 刷新接管统计
+     refreshTakeoverStats() {
+       this.loadTakeoverStats();
+       this.$message.success("统计已刷新");
+     },
+     
+     // 加载任务详情
+     loadTaskDetail() {
       this.loading = true;
        this.$axiosJsonPost(global.API.componentDiscovery.getTaskDetail, { taskId: this.taskId })
         .then((res) => {

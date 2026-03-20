@@ -4,6 +4,90 @@
   "description": "分布式协调系统",
   "version": "3.8.4",
   "sortNum": 3,
+  "installationType": "MIXED",
+  "existingComponentSupport": {
+    "detectionMethods": ["PORT_SCAN", "PROCESS_DETECTION", "CONFIG_PARSING"],
+    "validationRules": ["CONNECTIVITY", "FUNCTIONAL", "CONFIGURATION_VALIDITY"],
+    "takeoverCapability": "FULL",
+    "configMergeStrategy": "SMART_MERGE",
+    "supportedVersions": ["3.8.4", "3.7.2", "3.6.4", "3.5.10", "3.4.14"],
+    "portMappings": [
+      {
+        "serviceRole": "ZkServer",
+        "port": 2181,
+        "protocol": "CLIENT",
+        "description": "ZooKeeper client port",
+        "required": true
+      },
+      {
+        "serviceRole": "ZkServer",
+        "port": 2888,
+        "protocol": "PEER",
+        "description": "ZooKeeper peer communication port",
+        "required": true
+      },
+      {
+        "serviceRole": "ZkServer",
+        "port": 3888,
+        "protocol": "LEADER_ELECTION",
+        "description": "ZooKeeper leader election port",
+        "required": true
+      },
+      {
+        "serviceRole": "ZkServer",
+        "port": 8080,
+        "protocol": "ADMIN",
+        "description": "ZooKeeper admin server port",
+        "required": false
+      }
+    ],
+    "configFilePaths": [
+      {
+        "path": "conf/zoo.cfg",
+        "description": "ZooKeeper main configuration",
+        "required": true,
+        "configType": "PROPERTIES"
+      },
+      {
+        "path": "conf/log4j.properties",
+        "description": "ZooKeeper logging configuration",
+        "required": false,
+        "configType": "PROPERTIES"
+      },
+      {
+        "path": "conf/zookeeper-env.sh",
+        "description": "ZooKeeper environment variables",
+        "required": false,
+        "configType": "SHELL"
+      },
+      {
+        "path": "bin/zkEnv.sh",
+        "description": "ZooKeeper environment script",
+        "required": false,
+        "configType": "SHELL"
+      }
+    ],
+    "serviceSpecificDetection": {
+      "detectionScript": "",
+      "expectedProcessNames": ["QuorumPeerMain", "zookeeper"],
+      "expectedConfigPatterns": ["dataDir", "clientPort", "server\\."],
+      "healthChecks": [
+        {
+          "type": "TCP_CHECK",
+          "target": "${host}:2181",
+          "timeoutSeconds": 10,
+          "expectedResponse": "CONNECTED"
+        },
+        {
+          "type": "COMMAND_CHECK",
+          "command": "echo stat | nc ${host} 2181",
+          "timeoutSeconds": 10,
+          "expectedOutput": "Zookeeper version:",
+          "requiresNetcat": true
+        }
+      ]
+    }
+  },
   "dependencies":[],
   "packageName": "apache-zookeeper-3.8.4-bin.tar.gz",
   "decompressPackageName": "apache-zookeeper-3.8.4-bin",

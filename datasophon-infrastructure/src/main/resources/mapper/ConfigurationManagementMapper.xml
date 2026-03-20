@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~  Licensed to the Apache Software Foundation (ASF) under one or more
+  ~  contributor license agreements.  See the NOTICE file distributed with
+  ~  this work for additional information regarding copyright ownership.
+  ~  The ASF licenses this file to You under the Apache License, Version 2.0
+  ~  (the "License"); you may not use this file except in compliance with
+  ~  the License.  You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing, software
+  ~  distributed under the License is distributed on an "AS IS" BASIS,
+  ~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  See the License for the specific language governing permissions and
+  ~  limitations under the License.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.datasophon.dao.mapper.ConfigurationManagementMapper">
+
+    <!-- 基础结果映射 -->
+    <resultMap id="BaseResultMap" type="com.datasophon.dao.entity.ConfigurationManagementEntity">
+        <id column="id" property="id"/>
+        <result column="cluster_id" property="clusterId"/>
+        <result column="service_name" property="serviceName"/>
+        <result column="service_role" property="serviceRole"/>
+        <result column="hostname" property="hostname"/>
+        <result column="existing_component_id" property="existingComponentId"/>
+        <result column="config_name" property="configName"/>
+        <result column="config_file_name" property="configFileName"/>
+        <result column="config_file_path" property="configFilePath"/>
+        <result column="config_item_path" property="configItemPath"/>
+        <result column="data_type" property="dataType"/>
+        <result column="default_value" property="defaultValue"/>
+        <result column="current_value" property="currentValue"/>
+        <result column="platform_value" property="platformValue"/>
+        <result column="recommended_value" property="recommendedValue"/>
+        <result column="description" property="description"/>
+        <result column="importance_level" property="importanceLevel"/>
+        <result column="config_status" property="configStatus" typeHandler="com.baomidou.mybatisplus.extension.handlers.EnumTypeHandler"/>
+        <result column="sync_status" property="syncStatus" typeHandler="com.baomidou.mybatisplus.extension.handlers.EnumTypeHandler"/>
+        <result column="last_sync_time" property="lastSyncTime"/>
+        <result column="last_sync_direction" property="lastSyncDirection"/>
+        <result column="last_sync_task_id" property="lastSyncTaskId"/>
+        <result column="validation_status" property="validationStatus"/>
+        <result column="last_validation_time" property="lastValidationTime"/>
+        <result column="validation_result" property="validationResult"/>
+        <result column="modifiable" property="modifiable"/>
+        <result column="encrypted" property="encrypted"/>
+        <result column="sensitivity_level" property="sensitivityLevel"/>
+        <result column="version" property="version"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+        <result column="operator" property="operator"/>
+        <result column="remark" property="remark"/>
+    </resultMap>
+
+    <!-- 分页查询配置列表 -->
+    <select id="listConfigurations" resultMap="BaseResultMap">
+        SELECT cm.*, ci.cluster_name, CONCAT(c.service_name, ' - ', c.service_role) AS service_label
+        FROM t_ddh_configuration_management cm
+        LEFT JOIN t_ddh_cluster_info ci ON cm.cluster_id = ci.id
+        LEFT JOIN t_ddh_cluster_existing_component c ON cm.existing_component_id = c.id
+        WHERE 1=1
+        <if test="keyword != null and keyword != ''">
+            AND (
+                cm.config_name LIKE CONCAT('%', #{keyword}, '%')
+                OR cm.config_file_name LIKE CONCAT('%', #{keyword}, '%')
+                OR cm.description LIKE CONCAT('%', #{keyword}, '%')
+                OR cm.current_value LIKE CONCAT('%', #{keyword}, '%')
+                OR cm.platform_value LIKE CONCAT('%', #{keyword}, '%')
+            )
+        </if>
+        <if test="clusterId != null and clusterId != ''">
+            AND cm.cluster_id = #{clusterId}
+        </if>
+        <if test="configStatus != null and configStatus != ''">
+            AND cm.config_status = #{configStatus}
+        </if>
+        ORDER BY cm.update_time DESC
+    </select>
+
+    <!-- 根据集群ID和服务名称查询配置 -->
+    <select id="listByClusterAndService" resultMap="BaseResultMap">
+        SELECT *
+        FROM t_ddh_configuration_management
+        WHERE cluster_id = #{clusterId}
+          AND service_name = #{serviceName}
+        ORDER BY config_file_name, config_name
+    </select>
+
+    <!-- 根据集群ID、服务名称和配置文件名查询配置 -->
+    <select id="listByClusterServiceAndFile" resultMap="BaseResultMap">
+        SELECT *
+        FROM t_ddh_configuration_management
+        WHERE cluster_id = #{clusterId}
+          AND service_name = #{serviceName}
+          AND config_file_name = #{configFileName}
+        ORDER BY config_item_path
+    </select>
+
+    <!-- 根据现有组件ID查询配置 -->
+    <select id="listByExistingComponentId" resultMap="BaseResultMap">
+        SELECT *
+        FROM t_ddh_configuration_management
+        WHERE existing_component_id = #{existingComponentId}
+        ORDER BY config_file_name, config_name
+    </select>
+
+    <!-- 根据配置状态查询 -->
+    <select id="listByConfigStatus" resultMap="BaseResultMap">
+        SELECT *
+        FROM t_ddh_configuration_management
+        WHERE cluster_id = #{clusterId}
+          AND config_status = #{configStatus}
+        ORDER BY service_name, config_file_name
+    </select>
+
+    <!-- 根据同步状态查询 -->
+    <select id="listBySyncStatus" resultMap="BaseResultMap">
+        SELECT *
+        FROM t_ddh_configuration_management
+        WHERE cluster_id = #{clusterId}
+          AND sync_status = #{syncStatus}
+        ORDER BY service_name, config_file_name
+    </select>
+
+    <!-- 查询需要同步的配置 -->
+    <select id="listConfigsNeedSync" resultMap="BaseResultMap">
+        SELECT *
+        FROM t_ddh_configuration_management
+        WHERE cluster_id = #{clusterId}
+          AND (
+                config_status IN ('NOT_SYNCED', 'OUT_OF_SYNC', 'CONFLICT')
+                OR sync_status IN ('PENDING', 'FAILED')
+                OR (current_value != platform_value AND platform_value IS NOT NULL)
+          )
+        ORDER BY importance_level DESC, service_name, config_file_name
+    </select>
+
+    <!-- 查询配置冲突的配置项 -->
+    <select id="listConflictingConfigs" resultMap="BaseResultMap">
+        SELECT *
+        FROM t_ddh_configuration_management
+        WHERE cluster_id = #{clusterId}
+          AND config_status = 'CONFLICT'
+        ORDER BY service_name, config_file_name
+    </select>
+
+    <!-- 更新配置状态 -->
+    <update id="updateConfigStatus">
+        UPDATE t_ddh_configuration_management
+        SET config_status = #{configStatus},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 更新同步状态 -->
+    <update id="updateSyncStatus">
+        UPDATE t_ddh_configuration_management
+        SET sync_status = #{syncStatus},
+            last_sync_time = NOW(),
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 批量更新配置状态 -->
+    <update id="batchUpdateConfigStatus">
+        UPDATE t_ddh_configuration_management
+        SET config_status = #{configStatus},
+            update_time = NOW()
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <!-- 批量更新同步状态 -->
+    <update id="batchUpdateSyncStatus">
+        UPDATE t_ddh_configuration_management
+        SET sync_status = #{syncStatus},
+            update_time = NOW()
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <!-- 更新配置值 -->
+    <update id="updateConfigValue">
+        UPDATE t_ddh_configuration_management
+        SET current_value = #{currentValue},
+            platform_value = #{platformValue},
+            version = #{version},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 获取配置统计信息 -->
+    <select id="getConfigStatsByCluster" resultType="java.util.Map">
+        SELECT 
+            config_status AS status,
+            COUNT(*) AS count,
+            COUNT(CASE WHEN importance_level = 'CRITICAL' THEN 1 END) AS critical_count,
+            COUNT(CASE WHEN importance_level = 'IMPORTANT' THEN 1 END) AS important_count,
+            COUNT(CASE WHEN importance_level = 'NORMAL' THEN 1 END) AS normal_count,
+            COUNT(CASE WHEN importance_level = 'LOW' THEN 1 END) AS low_count
+        FROM t_ddh_configuration_management
+        WHERE cluster_id = #{clusterId}
+        GROUP BY config_status
+    </select>
+
+    <!-- 获取同步统计信息 -->
+    <select id="getSyncStatsByCluster" resultType="java.util.Map">
+        SELECT 
+            sync_status AS status,
+            COUNT(*) AS count,
+            COUNT(CASE WHEN config_status = 'CONFLICT' THEN 1 END) AS conflict_count,
+            COUNT(CASE WHEN current_value != platform_value AND platform_value IS NOT NULL THEN 1 END) AS value_mismatch_count
+        FROM t_ddh_configuration_management
+        WHERE cluster_id = #{clusterId}
+        GROUP BY sync_status
+    </select>
+
+    <!-- 获取验证统计信息 -->
+    <select id="getValidationStatsByCluster" resultType="java.util.Map">
+        SELECT 
+            validation_status AS status,
+            COUNT(*) AS count,
+            COUNT(CASE WHEN importance_level = 'CRITICAL' THEN 1 END) AS critical_count,
+            COUNT(CASE WHEN importance_level = 'IMPORTANT' THEN 1 END) AS important_count
+        FROM t_ddh_configuration_management
+        WHERE cluster_id = #{clusterId}
+          AND validation_status IS NOT NULL
+        GROUP BY validation_status
+    </select>
+
+</mapper>

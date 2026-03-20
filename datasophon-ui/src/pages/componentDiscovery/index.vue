@@ -179,6 +179,7 @@
 import { mapActions, mapState } from "vuex";
 import AdvanceTable from "@/components/table/advance/AdvanceTable";
 import DiscoveryWizard from "./wizard/index.vue";
+import ComponentDiscoveryService from "@/api/services/ComponentDiscoveryService";
 
 export default {
   name: "ComponentDiscovery",
@@ -214,6 +215,7 @@ export default {
     clusterList: [],
     hostList: [],
     selectedClusterId: null,
+    componentDiscoveryService: new ComponentDiscoveryService(),
   };
   },
   computed: {
@@ -235,7 +237,7 @@ export default {
         ...this.searchParams,
       };
       
-      this.$axiosJsonPost(global.API.componentDiscovery.listTasks, params)
+      this.componentDiscoveryService.listTasks(params)
         .then((res) => {
           if (res.code === 200) {
             this.dataSource = res.data.records || [];
@@ -362,7 +364,7 @@ export default {
             targetHostIds: hostIds,
           };
           
-          this.$axiosJsonPost(global.API.componentDiscovery.startTask, params)
+          this.componentDiscoveryService.startTask(params)
             .then((res) => {
               if (res.code === 200) {
                 this.$message.success("发现任务创建成功");
@@ -407,7 +409,7 @@ export default {
         title: "确认停止",
         content: `确定要停止发现任务 "${record.taskName}" 吗？`,
         onOk: () => {
-          this.$axiosJsonPost(global.API.componentDiscovery.stopTask, { taskId: record.id })
+          this.componentDiscoveryService.stopTask({ taskId: record.id })
             .then((res) => {
               if (res.code === 200) {
                 this.$message.success("任务已停止");
@@ -428,7 +430,7 @@ export default {
         title: "确认重试",
         content: `确定要重试发现任务 "${record.taskName}" 吗？`,
         onOk: () => {
-          this.$axiosJsonPost(global.API.componentDiscovery.retryTask, { taskId: record.id })
+          this.componentDiscoveryService.retryTask({ taskId: record.id })
             .then((res) => {
               if (res.code === 200) {
                 this.$message.success("任务已重试");
@@ -449,7 +451,7 @@ export default {
         title: "确认删除",
         content: `确定要删除发现任务 "${record.taskName}" 吗？删除后无法恢复。`,
         onOk: () => {
-          this.$axiosJsonPost(global.API.componentDiscovery.deleteTask, { taskId: record.id })
+          this.componentDiscoveryService.deleteTask({ taskId: record.id })
             .then((res) => {
               if (res.code === 200) {
                 this.$message.success("任务已删除");

@@ -2,6 +2,8 @@ import {loadRoutes, loadGuards, setAppOptions} from '@/utils/routerUtil'
 import {loadInterceptors} from '@/utils/request'
 import guards from '@/router/guards'
 import interceptors from '@/utils/axios-interceptors'
+import Vue from 'vue'
+import BaseService from '@/api/services/BaseService'
 
 /**
  * 启动引导方法
@@ -16,6 +18,10 @@ function bootstrap({router, store, i18n, message}) {
   setAppOptions({router, store, i18n})
   // 加载 axios 拦截器
   loadInterceptors(interceptors, {router, store, i18n, message})
+  // 初始化API服务层
+  BaseService.setAxiosMethods(Vue)
+  // 将服务实例添加到Vue原型，方便组件访问
+  Vue.prototype.$services = Vue.prototype.$services || {}
   // 加载路由
   loadRoutes()
   // 加载路由守卫

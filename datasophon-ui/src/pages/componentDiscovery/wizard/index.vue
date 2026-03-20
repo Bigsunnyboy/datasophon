@@ -206,6 +206,38 @@
               <p>发现完成后自动验证组件可用性</p>
             </div>
           </a-form-item>
+          
+          <a-form-item label="默认接管级别">
+            <a-select
+              v-decorator="[
+                'defaultTakeoverLevel',
+                { initialValue: 'MONITOR_ONLY' }
+              ]"
+              style="width: 200px"
+            >
+              <a-select-option value="MONITOR_ONLY">只读监控</a-select-option>
+              <a-select-option value="CONFIGURATION">配置管理</a-select-option>
+              <a-select-option value="CONTROL">操作控制</a-select-option>
+              <a-select-option value="FULL">完全接管</a-select-option>
+            </a-select>
+            <div class="scan-description">
+              <p>设置发现组件的默认接管级别，可在发现后调整</p>
+            </div>
+          </a-form-item>
+          
+          <a-form-item label="自动配置同步">
+            <a-switch
+              v-decorator="[
+                'autoConfigSync',
+                { valuePropName: 'checked', initialValue: false }
+              ]"
+              checked-children="开启"
+              un-checked-children="关闭"
+            />
+            <div class="scan-description">
+              <p>发现完成后自动同步配置差异（需要接管级别为配置管理或更高）</p>
+            </div>
+          </a-form-item>
         </a-form>
       </div>
       
@@ -281,6 +313,8 @@
             <a-descriptions-item label="并发线程数">{{ formValues.concurrentThreads }}</a-descriptions-item>
             <a-descriptions-item label="深度扫描">{{ formValues.deepScan ? '开启' : '关闭' }}</a-descriptions-item>
             <a-descriptions-item label="自动验证">{{ formValues.autoValidate ? '开启' : '关闭' }}</a-descriptions-item>
+            <a-descriptions-item label="默认接管级别">{{ getTakeoverLevelText(formValues.defaultTakeoverLevel) }}</a-descriptions-item>
+            <a-descriptions-item label="自动配置同步">{{ formValues.autoConfigSync ? '开启' : '关闭' }}</a-descriptions-item>
             <a-descriptions-item label="任务描述">{{ formValues.description || '无' }}</a-descriptions-item>
           </a-descriptions>
           
@@ -328,6 +362,8 @@ export default {
       selectedHostIds: [],
       hostFilter: "",
       architectureFilter: null,
+      defaultTakeoverLevel: "MONITOR_ONLY",
+      autoConfigSync: false,
       formValues: {},
     };
   },
@@ -366,7 +402,7 @@ export default {
     // 加载集群列表
     loadClusterList() {
       this.clusterLoading = true;
-      this.$axiosPost(global.API.cluster.list, {})
+      this.$axiosJsonPost(global.API.cluster.list, {})
         .then((res) => {
           if (res.code === 200) {
             this.clusterList = res.data || [];
@@ -388,7 +424,7 @@ export default {
         return;
       }
       
-      this.$axiosPost(global.API.host.getHostListByClusterId, { clusterId })
+      this.$axiosJsonPost(global.API.host.getHostListByClusterId, { clusterId })
         .then((res) => {
           if (res.code === 200) {
             this.hostList = res.data || [];
@@ -432,6 +468,17 @@ export default {
         COMPREHENSIVE: "综合发现",
       };
       return strategyMap[strategy] || strategy;
+    },
+    
+    // 接管级别文本
+    getTakeoverLevelText(takeoverLevel) {
+      const levelMap = {
+        MONITOR_ONLY: "只读监控",
+        CONFIGURATION: "配置管理", 
+        CONTROL: "操作控制",
+        FULL: "完全接管"
+      };
+      return levelMap[takeoverLevel] || takeoverLevel;
     },
     
     // 主机筛选

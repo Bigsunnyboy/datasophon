@@ -4,6 +4,113 @@
   "description": "分布式资源调度与管理平台",
   "version": "3.3.6",
   "sortNum": 2,
+  "installationType": "MIXED",
+  "existingComponentSupport": {
+    "detectionMethods": ["PORT_SCAN", "PROCESS_DETECTION", "CONFIG_PARSING", "API_QUERY"],
+    "validationRules": ["CONNECTIVITY", "FUNCTIONAL", "CONFIGURATION_VALIDITY"],
+    "takeoverCapability": "FULL",
+    "configMergeStrategy": "SMART_MERGE",
+    "supportedVersions": ["3.3.6", "3.2.4", "3.1.4", "3.0.3", "2.10.2"],
+    "portMappings": [
+      {
+        "serviceRole": "ResourceManager",
+        "port": 8032,
+        "protocol": "RPC",
+        "description": "ResourceManager scheduler RPC port",
+        "required": true
+      },
+      {
+        "serviceRole": "ResourceManager",
+        "port": 8030,
+        "protocol": "RPC",
+        "description": "ResourceManager resource tracker RPC port",
+        "required": true
+      },
+      {
+        "serviceRole": "ResourceManager",
+        "port": 8031,
+        "protocol": "RPC",
+        "description": "ResourceManager application manager RPC port",
+        "required": true
+      },
+      {
+        "serviceRole": "ResourceManager",
+        "port": 8088,
+        "protocol": "HTTP",
+        "description": "ResourceManager Web UI",
+        "required": true
+      },
+      {
+        "serviceRole": "NodeManager",
+        "port": 8040,
+        "protocol": "RPC",
+        "description": "NodeManager RPC port",
+        "required": true
+      },
+      {
+        "serviceRole": "NodeManager",
+        "port": 8042,
+        "protocol": "HTTP",
+        "description": "NodeManager Web UI",
+        "required": true
+      },
+      {
+        "serviceRole": "JobHistoryServer",
+        "port": 10020,
+        "protocol": "RPC",
+        "description": "JobHistoryServer RPC port",
+        "required": false
+      },
+      {
+        "serviceRole": "JobHistoryServer",
+        "port": 19888,
+        "protocol": "HTTP",
+        "description": "JobHistoryServer Web UI",
+        "required": false
+      }
+    ],
+    "configFilePaths": [
+      {
+        "path": "etc/hadoop/core-site.xml",
+        "description": "Hadoop core configuration",
+        "required": true,
+        "configType": "XML"
+      },
+      {
+        "path": "etc/hadoop/yarn-site.xml",
+        "description": "YARN configuration",
+        "required": true,
+        "configType": "XML"
+      },
+      {
+        "path": "etc/hadoop/mapred-site.xml",
+        "description": "MapReduce configuration",
+        "required": false,
+        "configType": "XML"
+      },
+      {
+        "path": "etc/hadoop/hadoop-env.sh",
+        "description": "Hadoop environment variables",
+        "required": false,
+        "configType": "PROPERTIES"
+      }
+    ],
+    "serviceSpecificDetection": {
+      "detectionScript": "",
+      "expectedProcessNames": ["ResourceManager", "NodeManager", "JobHistoryServer"],
+      "expectedConfigPatterns": ["yarn\\.", "mapreduce\\.", "yarn\\.resourcemanager\\.", "yarn\\.nodemanager\\."],
+      "healthChecks": [
+        {
+          "type": "HTTP_CHECK",
+          "target": "http://${host}:8088/ws/v1/cluster/info",
+          "timeoutSeconds": 30,
+          "expectedResponse": "200 OK",
+          "jsonPath": "$.clusterInfo.state",
+          "expectedValue": "STARTED"
+        }
+      ]
+    }
+  },
   "dependencies":["HDFS"],
   "packageName": "hadoop-3.3.6.tar.gz",
   "decompressPackageName": "hadoop-3.3.6",

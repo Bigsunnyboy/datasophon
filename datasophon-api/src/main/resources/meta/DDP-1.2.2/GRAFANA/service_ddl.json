@@ -4,6 +4,77 @@
   "description": "监控分析与数据可视化套件",
   "version": "9.1.6",
   "sortNum": 17,
+  "installationType": "MIXED",
+  "existingComponentSupport": {
+    "detectionMethods": ["PORT_SCAN", "PROCESS_DETECTION", "CONFIG_PARSING", "API_QUERY"],
+    "validationRules": ["CONNECTIVITY", "FUNCTIONAL", "CONFIGURATION_VALIDITY"],
+    "takeoverCapability": "FULL",
+    "configMergeStrategy": "SMART_MERGE",
+    "supportedVersions": ["9.1.6", "9.0.0", "8.5.0", "8.4.0", "8.3.0", "8.2.0", "8.1.0", "8.0.0"],
+    "portMappings": [
+      {
+        "serviceRole": "Grafana",
+        "port": 3000,
+        "protocol": "HTTP",
+        "description": "Grafana HTTP API and Web UI",
+        "required": true
+      },
+      {
+        "serviceRole": "Grafana",
+        "port": 3001,
+        "protocol": "HTTP",
+        "description": "Grafana metrics endpoint",
+        "required": false
+      }
+    ],
+    "configFilePaths": [
+      {
+        "path": "conf/grafana.ini",
+        "description": "Grafana main configuration",
+        "required": true,
+        "configType": "INI"
+      },
+      {
+        "path": "conf/defaults.ini",
+        "description": "Grafana default configuration",
+        "required": false,
+        "configType": "INI"
+      },
+      {
+        "path": "conf/ldap.toml",
+        "description": "Grafana LDAP configuration",
+        "required": false,
+        "configType": "TOML"
+      },
+      {
+        "path": "conf/provisioning/dashboards",
+        "description": "Grafana dashboard provisioning",
+        "required": false,
+        "configType": "YAML"
+      }
+    ],
+    "serviceSpecificDetection": {
+      "detectionScript": "",
+      "expectedProcessNames": ["grafana", "Grafana"],
+      "expectedConfigPatterns": ["server\\.http_port", "security\\.admin_password", "database\\.type"],
+      "healthChecks": [
+        {
+          "type": "HTTP_CHECK",
+          "target": "http://${host}:3000/api/health",
+          "timeoutSeconds": 30,
+          "expectedResponse": "200 OK",
+          "jsonPath": "$.database",
+          "expectedValue": "ok"
+        },
+        {
+          "type": "HTTP_CHECK",
+          "target": "http://${host}:3000/api/dashboards/home",
+          "timeoutSeconds": 30,
+          "expectedResponse": "200 OK"
+        }
+      ]
+    }
+  },
   "dependencies": [],
   "packageName": "grafana-9.1.6.tar.gz",
   "decompressPackageName": "grafana-9.1.6",

@@ -109,22 +109,39 @@
             </a-tag>
           </template>
           
-          <template slot="configStatus" slot-scope="text, record">
-            <span v-if="record.configStatus === 'COMPLETE'">
-              <a-icon type="check-circle" theme="filled" style="color: #52c41a" />
-              完整
-            </span>
-            <span v-else-if="record.configStatus === 'PARTIAL'">
-              <a-icon type="exclamation-circle" theme="filled" style="color: #faad14" />
-              部分
-            </span>
-            <span v-else>
-              <a-icon type="close-circle" theme="filled" style="color: #ff4d4f" />
-              缺失
-            </span>
-          </template>
-          
-          <template slot="action" slot-scope="text, record">
+           <template slot="configStatus" slot-scope="text, record">
+             <span v-if="record.configStatus === 'COMPLETE'">
+               <a-icon type="check-circle" theme="filled" style="color: #52c41a" />
+               完整
+             </span>
+             <span v-else-if="record.configStatus === 'PARTIAL'">
+               <a-icon type="exclamation-circle" theme="filled" style="color: #faad14" />
+               部分
+             </span>
+             <span v-else>
+               <a-icon type="close-circle" theme="filled" style="color: #ff4d4f" />
+               缺失
+             </span>
+           </template>
+           
+           <template slot="takeoverLevel" slot-scope="text, record">
+             <a-select
+               v-if="record.validated"
+               :value="record.takeoverLevel || 'MONITOR_ONLY'"
+               size="small"
+               style="width: 120px"
+               @change="(value) => updateTakeoverLevel(record, value)"
+               :disabled="!record.validated"
+             >
+               <a-select-option value="MONITOR_ONLY">只读监控</a-select-option>
+               <a-select-option value="CONFIGURATION">配置管理</a-select-option>
+               <a-select-option value="CONTROL">操作控制</a-select-option>
+               <a-select-option value="FULL">完全接管</a-select-option>
+             </a-select>
+             <span v-else style="color: #999">待验证</span>
+           </template>
+           
+           <template slot="action" slot-scope="text, record">
             <a-button type="link" @click="viewComponentDetail(record)" size="small">查看详情</a-button>
             <a-button type="link" @click="validateComponent(record)" size="small" v-if="!record.validated">验证</a-button>
             <a-button type="link" @click="importComponent(record)" size="small" v-if="record.validated">导入</a-button>
@@ -157,12 +174,27 @@
               <a-descriptions-item label="端口">{{ currentComponent.port }}</a-descriptions-item>
               <a-descriptions-item label="安装路径">{{ currentComponent.installPath }}</a-descriptions-item>
               <a-descriptions-item label="配置文件路径">{{ currentComponent.configPath }}</a-descriptions-item>
-              <a-descriptions-item label="验证状态">
-                <a-tag :color="currentComponent.validated ? 'green' : 'orange'">
-                  {{ currentComponent.validated ? '已验证' : '待验证' }}
-                </a-tag>
-              </a-descriptions-item>
-              <a-descriptions-item label="发现状态">{{ currentComponent.discoveryStatus }}</a-descriptions-item>
+               <a-descriptions-item label="验证状态">
+                 <a-tag :color="currentComponent.validated ? 'green' : 'orange'">
+                   {{ currentComponent.validated ? '已验证' : '待验证' }}
+                 </a-tag>
+               </a-descriptions-item>
+               <a-descriptions-item label="接管级别">
+                 <a-select
+                   v-if="currentComponent.validated"
+                   :value="currentComponent.takeoverLevel || 'MONITOR_ONLY'"
+                   size="small"
+                   style="width: 150px"
+                   @change="(value) => updateCurrentComponentTakeoverLevel(value)"
+                 >
+                   <a-select-option value="MONITOR_ONLY">只读监控</a-select-option>
+                   <a-select-option value="CONFIGURATION">配置管理</a-select-option>
+                   <a-select-option value="CONTROL">操作控制</a-select-option>
+                   <a-select-option value="FULL">完全接管</a-select-option>
+                 </a-select>
+                 <span v-else style="color: #999">请先验证组件</span>
+               </a-descriptions-item>
+               <a-descriptions-item label="发现状态">{{ currentComponent.discoveryStatus }}</a-descriptions-item>
               <a-descriptions-item label="配置状态">{{ currentComponent.configStatus }}</a-descriptions-item>
               <a-descriptions-item label="发现时间">{{ currentComponent.discoveryTime }}</a-descriptions-item>
               <a-descriptions-item label="验证时间">{{ currentComponent.validationTime }}</a-descriptions-item>
@@ -184,6 +216,63 @@
             </div>
             <div v-else class="empty-config">
               <a-empty description="暂无配置信息" />
+            </div>
+          </a-tab-pane>
+          <a-tab-pane key="configSync" tab="配置同步">
+            <div v-if="currentComponent.validated && currentComponent.takeoverLevel !== 'MONITOR_ONLY'">
+              <div class="sync-header mgb16">
+                <a-alert 
+                  message="配置同步功能允许您将发现的组件配置与DataSophon期望配置进行同步，实现配置统一管理。" 
+                  type="info" 
+                  show-icon 
+                  class="mgb12"
+                />
+                <div class="sync-stats">
+                  <span>共发现 <strong>{{ configDifferences.length }}</strong> 个配置差异</span>
+                  <span class="mgl16">已同步 <strong>{{ syncedCount }}</strong> 个配置</span>
+                  <span class="mgl16">待处理 <strong>{{ pendingCount }}</strong> 个配置</span>
+                </div>
+              </div>
+              
+              <div class="sync-actions mgb16">
+                <a-button type="primary" @click="syncAllConfigs" :disabled="configDifferences.length === 0">同步全部</a-button>
+                <a-button @click="ignoreAllConfigs" :disabled="configDifferences.length === 0" class="mgl12">忽略全部</a-button>
+                <a-button @click="loadConfigDifferences" icon="reload" class="mgl12">刷新差异</a-button>
+                <a-switch v-model="autoSync" class="mgl16" checked-children="自动同步" un-checked-children="手动同步" />
+              </div>
+              
+              <a-table
+                :columns="syncColumns"
+                :data-source="configDifferences"
+                rowKey="key"
+                size="small"
+                :pagination="{ pageSize: 10 }"
+              >
+                <template slot="diffStatus" slot-scope="text, record">
+                  <a-tag :color="getDiffStatusColor(record.diffStatus)">
+                    {{ getDiffStatusText(record.diffStatus) }}
+                  </a-tag>
+                </template>
+                <template slot="syncAction" slot-scope="text, record">
+                  <a-button type="link" @click="syncSingleConfig(record)" size="small" :disabled="record.synced">同步</a-button>
+                  <a-button type="link" @click="ignoreSingleConfig(record)" size="small" class="mgl8">忽略</a-button>
+                </template>
+              </a-table>
+            </div>
+            <div v-else class="sync-not-allowed">
+              <a-alert
+                message="配置同步不可用"
+                description="组件需要先验证并且接管级别不能为'只读监控'才能使用配置同步功能。"
+                type="warning"
+                show-icon
+              />
+              <div class="sync-requirements mgt16">
+                <p>启用配置同步的要求：</p>
+                <ul>
+                  <li>组件状态：已验证 ✓</li>
+                  <li>接管级别：配置管理、操作控制或完全接管</li>
+                </ul>
+              </div>
             </div>
           </a-tab-pane>
           <a-tab-pane key="process" tab="进程信息">
@@ -262,7 +351,7 @@ export default {
       },
       searchParams: {},
       selectedRowKeys: [],
-      columns: [
+       columns: [
         { title: "ID", dataIndex: "id", key: "id", width: 80 },
         { title: "主机", dataIndex: "hostname", key: "hostname" },
         { title: "IP", dataIndex: "ip", key: "ip" },
@@ -271,6 +360,7 @@ export default {
         { title: "端口", dataIndex: "port", key: "port" },
         { title: "安装路径", dataIndex: "installPath", key: "installPath" },
         { title: "验证状态", dataIndex: "status", key: "status", scopedSlots: { customRender: "status" } },
+        { title: "接管级别", dataIndex: "takeoverLevel", key: "takeoverLevel", scopedSlots: { customRender: "takeoverLevel" } },
         { title: "发现状态", dataIndex: "discoveryStatus", key: "discoveryStatus", scopedSlots: { customRender: "discoveryStatus" } },
         { title: "配置状态", dataIndex: "configStatus", key: "configStatus", scopedSlots: { customRender: "configStatus" } },
         { title: "操作", key: "action", scopedSlots: { customRender: "action" }, width: 200 },
@@ -289,6 +379,15 @@ export default {
         { title: "来源", dataIndex: "source", key: "source" },
         { title: "是否必需", dataIndex: "required", key: "required" },
       ],
+      syncColumns: [
+        { title: "配置项", dataIndex: "key", key: "key" },
+        { title: "当前值", dataIndex: "currentValue", key: "currentValue" },
+        { title: "期望值", dataIndex: "expectedValue", key: "expectedValue" },
+        { title: "差异", dataIndex: "diffStatus", key: "diffStatus", scopedSlots: { customRender: "diffStatus" } },
+        { title: "同步操作", key: "syncAction", scopedSlots: { customRender: "syncAction" }, width: 150 },
+      ],
+      configDifferences: [],
+      autoSync: false,
       processColumns: [
         { title: "PID", dataIndex: "pid", key: "pid" },
         { title: "进程名", dataIndex: "name", key: "name" },
@@ -306,6 +405,12 @@ export default {
     }),
     hasValidatedComponents() {
       return this.dataSource.some(item => item.validated);
+    },
+    syncedCount() {
+      return this.configDifferences.filter(item => item.synced).length;
+    },
+    pendingCount() {
+      return this.configDifferences.filter(item => !item.synced && item.diffStatus !== 'IGNORED').length;
     },
   },
   mounted() {
@@ -495,7 +600,7 @@ export default {
         content: `确定要导入选中的 ${validatedIds.length} 个已验证组件吗？`,
         onOk: () => {
           this.loading = true;
-          this.$axiosPost(global.API.componentDiscovery.batchImport, {
+          this.$axiosJsonPost(global.API.componentDiscovery.batchImport, {
             taskId: this.taskId,
             resultIds: validatedIds,
           })
@@ -530,7 +635,7 @@ export default {
         okType: "danger",
         onOk: () => {
           this.loading = true;
-          this.$axiosPost(global.API.componentDiscovery.batchDelete, {
+          this.$axiosJsonPost(global.API.componentDiscovery.batchDelete, {
             taskId: this.taskId,
             resultIds: this.selectedRowKeys,
           })
@@ -664,11 +769,224 @@ export default {
             .catch((error) => {
               this.$message.error("请求失败: " + error.message);
             });
-        },
-      });
-    },
-  },
-};
+         },
+       });
+     },
+
+     // 更新接管级别
+     updateTakeoverLevel(record, takeoverLevel) {
+       if (!record.validated) {
+         this.$message.warning("请先验证组件再设置接管级别");
+         return;
+       }
+       
+       this.$confirm({
+         title: "更新接管级别",
+         content: `确定要将组件 ${record.componentType} (${record.hostname}) 的接管级别设置为"${this.getTakeoverLevelText(takeoverLevel)}"吗？`,
+         onOk: () => {
+           // TODO: 实现接管级别更新API
+           // 临时实现：模拟成功响应
+           console.log(`更新接管级别: resultId=${record.id}, takeoverLevel=${takeoverLevel}`);
+           
+           // 模拟API调用延迟
+           setTimeout(() => {
+             this.$message.success("接管级别更新成功");
+             record.takeoverLevel = takeoverLevel;
+           }, 300);
+           
+           // 实际API调用（后端实现后取消注释）
+           /*
+           this.$axiosJsonPost(global.API.componentDiscovery.updateTakeoverLevel, { 
+             resultId: record.id,
+             takeoverLevel 
+           })
+             .then((res) => {
+               if (res.code === 200) {
+                 this.$message.success("接管级别更新成功");
+                 record.takeoverLevel = takeoverLevel;
+               } else {
+                 this.$message.error(res.message || "更新接管级别失败");
+               }
+             })
+             .catch((error) => {
+               this.$message.error("请求失败: " + error.message);
+             });
+           */
+         },
+       });
+     },
+
+     // 更新当前组件接管级别（从模态框）
+     updateCurrentComponentTakeoverLevel(takeoverLevel) {
+       if (!this.currentComponent.validated) {
+         this.$message.warning("请先验证组件再设置接管级别");
+         return;
+       }
+       
+       this.$confirm({
+         title: "更新接管级别",
+         content: `确定要将组件的接管级别设置为"${this.getTakeoverLevelText(takeoverLevel)}"吗？`,
+         onOk: () => {
+           // TODO: 实现接管级别更新API
+           // 临时实现：模拟成功响应
+           console.log(`更新接管级别: resultId=${this.currentComponent.id}, takeoverLevel=${takeoverLevel}`);
+           
+           // 模拟API调用延迟
+           setTimeout(() => {
+             this.$message.success("接管级别更新成功");
+             this.currentComponent.takeoverLevel = takeoverLevel;
+           }, 300);
+           
+           // 实际API调用（后端实现后取消注释）
+           /*
+           this.$axiosJsonPost(global.API.componentDiscovery.updateTakeoverLevel, { 
+             resultId: this.currentComponent.id,
+             takeoverLevel 
+           })
+             .then((res) => {
+               if (res.code === 200) {
+                 this.$message.success("接管级别更新成功");
+                 this.currentComponent.takeoverLevel = takeoverLevel;
+               } else {
+                 this.$message.error(res.message || "更新接管级别失败");
+               }
+             })
+             .catch((error) => {
+               this.$message.error("请求失败: " + error.message);
+             });
+           */
+         },
+       });
+     },
+
+      // 获取接管级别文本
+      getTakeoverLevelText(takeoverLevel) {
+        const levelMap = {
+          MONITOR_ONLY: "只读监控",
+          CONFIGURATION: "配置管理", 
+          CONTROL: "操作控制",
+          FULL: "完全接管"
+        };
+        return levelMap[takeoverLevel] || takeoverLevel;
+      },
+
+      // 加载配置差异
+      loadConfigDifferences() {
+        if (!this.currentComponent || !this.currentComponent.validated) {
+          return;
+        }
+        
+        // TODO: 实现配置差异API
+        console.log('加载配置差异，组件ID:', this.currentComponent.id);
+        
+        // 模拟数据
+        setTimeout(() => {
+          this.configDifferences = [
+            { key: 'dfs.replication', currentValue: '3', expectedValue: '2', diffStatus: 'DIFFERENT', synced: false },
+            { key: 'yarn.scheduler.minimum-allocation-mb', currentValue: '1024', expectedValue: '2048', diffStatus: 'DIFFERENT', synced: false },
+            { key: 'mapreduce.map.memory.mb', currentValue: '1024', expectedValue: '1024', diffStatus: 'SAME', synced: true },
+            { key: 'hbase.regionserver.global.memstore.size', currentValue: '0.4', expectedValue: '0.3', diffStatus: 'DIFFERENT', synced: false },
+            { key: 'zookeeper.session.timeout', currentValue: '30000', expectedValue: '30000', diffStatus: 'SAME', synced: true },
+            { key: 'kafka.log.retention.hours', currentValue: '168', expectedValue: '72', diffStatus: 'DIFFERENT', synced: false },
+          ];
+          this.$message.success('配置差异加载完成');
+        }, 300);
+      },
+      
+      // 同步全部配置
+      syncAllConfigs() {
+        if (this.configDifferences.length === 0) {
+          this.$message.warning('没有需要同步的配置');
+          return;
+        }
+        
+        this.$confirm({
+          title: '同步全部配置',
+          content: `确定要同步全部 ${this.pendingCount} 个配置差异吗？`,
+          onOk: () => {
+            // TODO: 实现批量同步API
+            console.log('同步全部配置，组件ID:', this.currentComponent.id);
+            
+            setTimeout(() => {
+              this.configDifferences = this.configDifferences.map(item => ({
+                ...item,
+                synced: item.diffStatus === 'DIFFERENT' ? true : item.synced
+              }));
+              this.$message.success('配置同步完成');
+            }, 500);
+          },
+        });
+      },
+      
+      // 忽略全部配置
+      ignoreAllConfigs() {
+        if (this.configDifferences.length === 0) {
+          this.$message.warning('没有需要忽略的配置');
+          return;
+        }
+        
+        this.$confirm({
+          title: '忽略全部配置',
+          content: '确定要忽略所有配置差异吗？忽略后这些差异将不再显示。',
+          onOk: () => {
+            this.configDifferences = this.configDifferences.map(item => ({
+              ...item,
+              diffStatus: 'IGNORED',
+              synced: false
+            }));
+            this.$message.success('配置差异已忽略');
+          },
+        });
+      },
+      
+      // 同步单个配置
+      syncSingleConfig(record) {
+        if (record.synced) {
+          return;
+        }
+        
+        // TODO: 实现单个配置同步API
+        console.log('同步单个配置:', record.key, '组件ID:', this.currentComponent.id);
+        
+        setTimeout(() => {
+          record.synced = true;
+          this.$message.success(`配置 ${record.key} 同步成功`);
+        }, 200);
+      },
+      
+      // 忽略单个配置
+      ignoreSingleConfig(record) {
+        // TODO: 实现单个配置忽略API
+        console.log('忽略单个配置:', record.key, '组件ID:', this.currentComponent.id);
+        
+        record.diffStatus = 'IGNORED';
+        record.synced = false;
+        this.$message.info(`配置 ${record.key} 已忽略`);
+      },
+      
+      // 获取差异状态颜色
+      getDiffStatusColor(diffStatus) {
+        const colorMap = {
+          SAME: 'green',
+          DIFFERENT: 'orange',
+          IGNORED: 'gray',
+          ERROR: 'red',
+        };
+        return colorMap[diffStatus] || 'default';
+      },
+      
+      // 获取差异状态文本
+      getDiffStatusText(diffStatus) {
+        const textMap = {
+          SAME: '一致',
+          DIFFERENT: '不同',
+          IGNORED: '已忽略',
+          ERROR: '错误',
+        };
+        return textMap[diffStatus] || diffStatus;
+      },
+   },
+ };
 </script>
 
 <style lang="less" scoped>
@@ -741,6 +1059,60 @@ export default {
   .detail-actions {
     border-top: 1px solid #e8e8e8;
     padding-top: 16px;
+  }
+  
+  /* 配置同步样式 */
+  .sync-header {
+    .sync-stats {
+      padding: 8px 12px;
+      background: #fafafa;
+      border-radius: 4px;
+      border: 1px solid #e8e8e8;
+      font-size: 14px;
+      color: #666;
+      
+      span {
+        margin-right: 16px;
+        
+        strong {
+          color: #1890ff;
+          font-weight: bold;
+        }
+      }
+    }
+  }
+  
+  .sync-actions {
+    display: flex;
+    align-items: center;
+  }
+  
+  .sync-not-allowed {
+    text-align: center;
+    padding: 40px 20px;
+    
+    .sync-requirements {
+      margin-top: 20px;
+      padding: 16px;
+      background: #fafafa;
+      border-radius: 4px;
+      border: 1px solid #e8e8e8;
+      text-align: left;
+      
+      p {
+        font-weight: bold;
+        margin-bottom: 8px;
+      }
+      
+      ul {
+        margin: 0;
+        padding-left: 20px;
+        
+        li {
+          margin: 4px 0;
+        }
+      }
+    }
   }
 }
 </style>

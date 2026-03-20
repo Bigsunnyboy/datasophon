@@ -4,6 +4,90 @@
   "description": "离线数据仓库",
   "version": "3.1.3",
   "sortNum": 5,
+  "installationType": "MIXED",
+  "existingComponentSupport": {
+    "detectionMethods": ["PORT_SCAN", "PROCESS_DETECTION", "CONFIG_PARSING", "API_QUERY"],
+    "validationRules": ["CONNECTIVITY", "FUNCTIONAL", "CONFIGURATION_VALIDITY"],
+    "takeoverCapability": "FULL",
+    "configMergeStrategy": "SMART_MERGE",
+    "supportedVersions": ["3.1.3", "3.1.2", "2.3.9", "2.3.8", "1.2.2"],
+    "portMappings": [
+      {
+        "serviceRole": "HiveServer2",
+        "port": 10000,
+        "protocol": "JDBC",
+        "description": "HiveServer2 JDBC port",
+        "required": true
+      },
+      {
+        "serviceRole": "HiveServer2",
+        "port": 10002,
+        "protocol": "HTTP",
+        "description": "HiveServer2 HTTP port",
+        "required": false
+      },
+      {
+        "serviceRole": "HiveMetaStore",
+        "port": 9083,
+        "protocol": "THRIFT",
+        "description": "Hive Metastore Thrift port",
+        "required": true
+      },
+      {
+        "serviceRole": "HiveMetaStore",
+        "port": 9084,
+        "protocol": "HTTP",
+        "description": "Hive Metastore HTTP port",
+        "required": false
+      }
+    ],
+    "configFilePaths": [
+      {
+        "path": "conf/hive-site.xml",
+        "description": "Hive main configuration",
+        "required": true,
+        "configType": "XML"
+      },
+      {
+        "path": "conf/hive-env.sh",
+        "description": "Hive environment variables",
+        "required": false,
+        "configType": "SHELL"
+      },
+      {
+        "path": "conf/hive-log4j.properties",
+        "description": "Hive logging configuration",
+        "required": false,
+        "configType": "PROPERTIES"
+      },
+      {
+        "path": "conf/hive-exec-log4j.properties",
+        "description": "Hive execution logging configuration",
+        "required": false,
+        "configType": "PROPERTIES"
+      }
+    ],
+    "serviceSpecificDetection": {
+      "detectionScript": "",
+      "expectedProcessNames": ["HiveServer2", "MetaStore", "Hive Metastore"],
+      "expectedConfigPatterns": ["hive\\.metastore\\.uris", "hive\\.server2\\.thrift\\.port", "javax\\.jdo\\.option"],
+      "healthChecks": [
+        {
+          "type": "TCP_CHECK",
+          "target": "${host}:10000",
+          "timeoutSeconds": 10,
+          "expectedResponse": "CONNECTED"
+        },
+        {
+          "type": "JDBC_CHECK",
+          "jdbcUrl": "jdbc:hive2://${host}:10000/default",
+          "timeoutSeconds": 30,
+          "driverClass": "org.apache.hive.jdbc.HiveDriver",
+          "testQuery": "SELECT 1"
+        }
+      ]
+    }
+  },
   "dependencies":["HDFS"],
   "packageName": "apache-hive-3.1.3-bin.tar.gz",
   "decompressPackageName": "apache-hive-3.1.3-bin",

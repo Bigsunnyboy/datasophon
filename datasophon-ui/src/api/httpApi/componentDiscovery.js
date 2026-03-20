@@ -79,4 +79,6 @@ export default {
   batchValidate: path + '/api/component/discovery/batch-validate', // 批量验证
   batchImport: path + '/api/component/discovery/batch-import', // 批量导入
   batchDelete: path + '/api/component/discovery/batch-delete', // 批量删除
+  getTakeoverStats: path + '/api/component/discovery/get-takeover-stats', // 获取接管统计
+  updateTakeoverLevel: path + '/api/component/discovery/update-takeover-level', // 更新接管级别
 }

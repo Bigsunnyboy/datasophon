@@ -4,6 +4,97 @@
   "description": "高吞吐量的分布式发布订阅消息系统",
   "version": "2.4.1",
   "sortNum": 4,
+  "installationType": "MIXED",
+  "existingComponentSupport": {
+    "detectionMethods": ["PORT_SCAN", "PROCESS_DETECTION", "CONFIG_PARSING", "API_QUERY"],
+    "validationRules": ["CONNECTIVITY", "FUNCTIONAL", "CONFIGURATION_VALIDITY"],
+    "takeoverCapability": "FULL",
+    "configMergeStrategy": "SMART_MERGE",
+    "supportedVersions": ["2.4.1", "2.5.1", "2.6.3", "2.7.2", "2.8.2", "3.0.2", "3.1.2", "3.2.3", "3.3.2", "3.4.1", "3.5.2", "3.6.2"],
+    "portMappings": [
+      {
+        "serviceRole": "KafkaBroker",
+        "port": 9092,
+        "protocol": "PLAINTEXT",
+        "description": "Kafka broker plaintext port",
+        "required": true
+      },
+      {
+        "serviceRole": "KafkaBroker",
+        "port": 9093,
+        "protocol": "SSL",
+        "description": "Kafka broker SSL port",
+        "required": false
+      },
+      {
+        "serviceRole": "KafkaBroker",
+        "port": 9094,
+        "protocol": "SASL_PLAINTEXT",
+        "description": "Kafka broker SASL plaintext port",
+        "required": false
+      },
+      {
+        "serviceRole": "KafkaBroker",
+        "port": 9095,
+        "protocol": "SASL_SSL",
+        "description": "Kafka broker SASL SSL port",
+        "required": false
+      },
+      {
+        "serviceRole": "KafkaBroker",
+        "port": 9991,
+        "protocol": "JMX",
+        "description": "Kafka JMX monitoring port",
+        "required": false
+      }
+    ],
+    "configFilePaths": [
+      {
+        "path": "config/server.properties",
+        "description": "Kafka broker main configuration",
+        "required": true,
+        "configType": "PROPERTIES"
+      },
+      {
+        "path": "config/log4j.properties",
+        "description": "Kafka logging configuration",
+        "required": false,
+        "configType": "PROPERTIES"
+      },
+      {
+        "path": "config/zookeeper.properties",
+        "description": "ZooKeeper configuration (for embedded ZooKeeper)",
+        "required": false,
+        "configType": "PROPERTIES"
+      },
+      {
+        "path": "bin/kafka-server-start.sh",
+        "description": "Kafka startup script",
+        "required": false,
+        "configType": "SHELL"
+      }
+    ],
+    "serviceSpecificDetection": {
+      "detectionScript": "",
+      "expectedProcessNames": ["kafka", "Kafka"],
+      "expectedConfigPatterns": ["broker\\.id", "listeners", "zookeeper\\.connect", "log\\.dirs"],
+      "healthChecks": [
+        {
+          "type": "TCP_CHECK",
+          "target": "${host}:9092",
+          "timeoutSeconds": 10,
+          "expectedResponse": "CONNECTED"
+        },
+        {
+          "type": "API_CHECK",
+          "target": "http://${host}:8080/v3/clusters",
+          "timeoutSeconds": 30,
+          "expectedResponse": "200 OK",
+          "requiresKafkaRest": true
+        }
+      ]
+    }
+  },
   "dependencies":["ZOOKEEPER"],
   "packageName": "kafka-2.4.1.tar.gz",
   "decompressPackageName": "kafka-2.4.1",

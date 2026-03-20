@@ -3,6 +3,7 @@
   "label": "AlertManager",
   "description": "告警通知管理系统",
   "version": "0.23.0",
+  "existingComponentSupport": true,
   "sortNum": 15,
   "dependencies": [],
   "packageName": "alertmanager-0.23.0.tar.gz",

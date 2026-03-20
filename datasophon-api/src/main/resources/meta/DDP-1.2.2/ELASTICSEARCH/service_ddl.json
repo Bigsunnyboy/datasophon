@@ -4,6 +4,63 @@
   "description": "高性能搜索引擎",
   "version": "7.16.2",
   "sortNum": 11,
+  "existingComponentSupport": {
+    "detectionMethods": ["PORT_SCAN", "PROCESS_DETECTION", "CONFIG_PARSING"],
+    "validationRules": ["CONNECTIVITY", "FUNCTIONAL", "CONFIGURATION_VALIDITY"],
+    "takeoverCapability": "FULL",
+    "configMergeStrategy": "SMART_MERGE",
+    "supportedVersions": ["7.16.2", "7.17.0", "8.0.0"],
+    "portMappings": [
+      {
+        "serviceRole": "ElasticSearch",
+        "port": 9200,
+        "protocol": "HTTP",
+        "description": "ElasticSearch HTTP API",
+        "required": true
+      },
+      {
+        "serviceRole": "ElasticSearch",
+        "port": 9300,
+        "protocol": "TCP",
+        "description": "ElasticSearch transport port",
+        "required": true
+      },
+      {
+        "serviceRole": "EsExporter",
+        "port": 9114,
+        "protocol": "HTTP",
+        "description": "ElasticSearch exporter metrics",
+        "required": true
+      }
+    ],
+    "configFilePaths": [
+      {
+        "path": "config/elasticsearch.yml",
+        "description": "ElasticSearch主配置文件",
+        "required": true,
+        "configType": "YAML"
+      },
+      {
+        "path": "config/jvm.options",
+        "description": "JVM配置",
+        "required": false,
+        "configType": "PROPERTIES"
+      }
+    ],
+    "serviceSpecificDetection": {
+      "detectionScript": "",
+      "expectedProcessNames": ["elasticsearch", "es_exporter"],
+      "expectedConfigPatterns": ["cluster\\.name", "node\\.name", "http\\.port"],
+      "healthChecks": [
+        {
+          "type": "HTTP_CHECK",
+          "target": "http://${host}:9200/_cluster/health",
+          "timeoutSeconds": 30,
+          "expectedResponse": "200 OK"
+        }
+      ]
+    }
+  },
   "dependencies": [],
   "packageName": "elasticsearch-7.16.2.tar.gz",
   "decompressPackageName": "elasticsearch-7.16.2",

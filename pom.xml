@@ -78,6 +78,7 @@
         <spotless.scalafmt.version>3.4.3</spotless.scalafmt.version>
         <spotless.ratchetFrom>origin/dev</spotless.ratchetFrom>
         <mockito-junit-jupiter.version>4.5.1</mockito-junit-jupiter.version>
+        <jetty.version>9.4.44.v20210927</jetty.version>
     </properties>
     <dependencyManagement>
         <dependencies>

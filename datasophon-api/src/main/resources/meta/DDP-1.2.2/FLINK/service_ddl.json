@@ -4,6 +4,56 @@
   "description": "实时计算引擎",
   "version": "1.17.2",
   "sortNum": 6,
+  "existingComponentSupport": {
+    "detectionMethods": ["PORT_SCAN", "PROCESS_DETECTION", "CONFIG_PARSING"],
+    "validationRules": ["CONNECTIVITY", "FUNCTIONAL", "CONFIGURATION_VALIDITY"],
+    "takeoverCapability": "FULL",
+    "configMergeStrategy": "SMART_MERGE",
+    "supportedVersions": ["1.17.2", "1.18.0", "1.19.0"],
+    "portMappings": [
+      {
+        "serviceRole": "FlinkClient",
+        "port": 8081,
+        "protocol": "HTTP",
+        "description": "Flink Web UI",
+        "required": true
+      },
+      {
+        "serviceRole": "FlinkClient",
+        "port": 6123,
+        "protocol": "RPC",
+        "description": "JobManager RPC port",
+        "required": true
+      }
+    ],
+    "configFilePaths": [
+      {
+        "path": "conf/flink-conf.yaml",
+        "description": "Flink主配置文件",
+        "required": true,
+        "configType": "YAML"
+      },
+      {
+        "path": "conf/log4j.properties",
+        "description": "Flink日志配置",
+        "required": false,
+        "configType": "PROPERTIES"
+      }
+    ],
+    "serviceSpecificDetection": {
+      "detectionScript": "",
+      "expectedProcessNames": ["FlinkJobManager", "FlinkTaskManager"],
+      "expectedConfigPatterns": ["jobmanager\\.", "taskmanager\\.", "high-availability"],
+      "healthChecks": [
+        {
+          "type": "HTTP_CHECK",
+          "target": "http://${host}:8081",
+          "timeoutSeconds": 30,
+          "expectedResponse": "200 OK"
+        }
+      ]
+    }
+  },
   "dependencies":[],
   "packageName": "flink-1.17.2-bin-scala_2.12.tgz",
   "decompressPackageName": "flink-1.17.2",

@@ -25,7 +25,9 @@ import services from './services'
 import user from './user'
 import system from './system'
 import componentDiscovery from './componentDiscovery'
+import operationsManagement from './operationsManagement'
+import configurationManagement from './configurationManagement'
 
 
 
-export default {...cluster, ...host, ...user, ...services, ...system, ...componentDiscovery, componentDiscovery}
+export default {...cluster, ...host, ...user, ...services, ...system, ...componentDiscovery, ...operationsManagement, ...configurationManagement, componentDiscovery}

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~  Licensed to the Apache Software Foundation (ASF) under one or more
+  ~  contributor license agreements.  See the NOTICE file distributed with
+  ~  this work for additional information regarding copyright ownership.
+  ~  The ASF licenses this file to You under the Apache License, Version 2.0
+  ~  (the "License"); you may not use this file except in compliance with
+  ~  the License.  You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing, software
+  ~  distributed under the License is distributed on an "AS IS" BASIS,
+  ~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  See the License for the specific language governing permissions and
+  ~  limitations under the License.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.datasophon.dao.mapper.ComponentDiscoveryResultMapper">
+
+    <!-- 根据集群ID查询发现结果 -->
+    <select id="listByClusterId" resultType="com.datasophon.dao.entity.ComponentDiscoveryResultEntity">
+        SELECT *
+        FROM t_ddh_component_discovery_result
+        WHERE cluster_id = #{clusterId}
+        ORDER BY discovery_start_time DESC
+    </select>
+
+    <!-- 根据集群ID和服务名称查询发现结果 -->
+    <select id="listByClusterAndService" resultType="com.datasophon.dao.entity.ComponentDiscoveryResultEntity">
+        SELECT *
+        FROM t_ddh_component_discovery_result
+        WHERE cluster_id = #{clusterId}
+          AND service_name = #{serviceName}
+        ORDER BY discovery_start_time DESC
+    </select>
+
+    <!-- 根据发现状态查询 -->
+    <select id="listByStatus" resultType="com.datasophon.dao.entity.ComponentDiscoveryResultEntity">
+        SELECT *
+        FROM t_ddh_component_discovery_result
+        WHERE cluster_id = #{clusterId}
+          AND discovery_status = #{discoveryStatus}
+        ORDER BY discovery_start_time DESC
+    </select>
+
+    <!-- 根据任务ID查询发现结果 -->
+    <select id="getByTaskId" resultType="com.datasophon.dao.entity.ComponentDiscoveryResultEntity">
+        SELECT *
+        FROM t_ddh_component_discovery_result
+        WHERE discovery_task_id = #{discoveryTaskId}
+    </select>
+
+    <!-- 查询最近N次的发现结果 -->
+    <select id="listRecentDiscoveries" resultType="com.datasophon.dao.entity.ComponentDiscoveryResultEntity">
+        SELECT *
+        FROM t_ddh_component_discovery_result
+        WHERE cluster_id = #{clusterId}
+          <if test="serviceName != null and serviceName != ''">
+            AND service_name = #{serviceName}
+          </if>
+        ORDER BY discovery_start_time DESC
+        LIMIT #{limit}
+    </select>
+
+    <!-- 统计发现结果 -->
+    <select id="countByClusterAndStatus" resultType="int">
+        SELECT COUNT(*)
+        FROM t_ddh_component_discovery_result
+        WHERE cluster_id = #{clusterId}
+          AND discovery_status = #{discoveryStatus}
+    </select>
+
+    <!-- 更新发现状态 -->
+    <update id="updateDiscoveryStatus">
+        UPDATE t_ddh_component_discovery_result
+        SET discovery_status = #{discoveryStatus},
+            discovery_end_time = #{discoveryEndTime},
+            duration_ms = #{durationMs},
+            error_message = #{errorMessage},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 更新发现结果详情 -->
+    <update id="updateDiscoveryDetails">
+        UPDATE t_ddh_component_discovery_result
+        SET discovery_stats = #{discoveryStats},
+            discovery_details = #{discoveryDetails},
+            registered_count = #{registeredCount},
+            update_time = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除过期的发现结果（保留最近N天） -->
+    <delete id="deleteExpiredResults">
+        DELETE FROM t_ddh_component_discovery_result
+        WHERE discovery_start_time &lt; DATE_SUB(NOW(), INTERVAL #{daysToKeep} DAY)
+    </delete>
+
+    <!-- 根据时间段查询发现结果 -->
+    <select id="listByTimeRange" resultType="com.datasophon.dao.entity.ComponentDiscoveryResultEntity">
+        SELECT *
+        FROM t_ddh_component_discovery_result
+        WHERE cluster_id = #{clusterId}
+          AND discovery_start_time BETWEEN #{startTime} AND #{endTime}
+        ORDER BY discovery_start_time DESC
+    </select>
+
+</mapper>

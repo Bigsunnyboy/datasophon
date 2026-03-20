@@ -42,3 +42,9 @@ front/
 node/
 
 *.flattened-pom.xml
+/deploy/
+/logs/
+/.cursorindexingignore
+/META-INF/
+/pid/
+/.specstory/

@@ -66,6 +66,32 @@ const routerMap = {
     name: 'exp500',
     path: '500',
     component: () => import('@/pages/exception/500')
+  },
+  // 配置管理
+  configurationManagement: {
+    name: '配置管理',
+    icon: 'setting',
+    component: view.page,
+    authority: 'admin'
+  },
+  configurationList: {
+    path: 'configuration-list',
+    name: '配置管理',
+    component: () => import('@/pages/configurationManagement/index'),
+    authority: 'admin'
+  },
+  // 运维控制台
+  operationsManagement: {
+    name: '运维控制台',
+    icon: 'tool',
+    component: view.page,
+    authority: 'admin'
+  },
+  operationsConsole: {
+    path: 'operations-console',
+    name: '运维控制台',
+    component: () => import('@/pages/operationsManagement/index'),
+    authority: 'admin'
   }
 }
 export default routerMap

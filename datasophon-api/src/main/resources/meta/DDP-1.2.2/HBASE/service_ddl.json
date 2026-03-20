@@ -4,6 +4,76 @@
   "description": "分布式列式海量存储数据库",
   "version": "2.4.16",
   "sortNum": 8,
+  "existingComponentSupport": {
+    "detectionMethods": ["PORT_SCAN", "PROCESS_DETECTION", "CONFIG_PARSING"],
+    "validationRules": ["CONNECTIVITY", "FUNCTIONAL", "CONFIGURATION_VALIDITY"],
+    "takeoverCapability": "FULL",
+    "configMergeStrategy": "SMART_MERGE",
+    "supportedVersions": ["2.4.16", "2.5.0", "2.6.0"],
+    "portMappings": [
+      {
+        "serviceRole": "HbaseMaster",
+        "port": 16010,
+        "protocol": "HTTP",
+        "description": "HBase Master Web UI",
+        "required": true
+      },
+      {
+        "serviceRole": "HbaseMaster",
+        "port": 16000,
+        "protocol": "RPC",
+        "description": "HBase Master RPC port",
+        "required": true
+      },
+      {
+        "serviceRole": "RegionServer",
+        "port": 16030,
+        "protocol": "HTTP",
+        "description": "RegionServer Web UI",
+        "required": true
+      },
+      {
+        "serviceRole": "RegionServer",
+        "port": 16020,
+        "protocol": "RPC",
+        "description": "RegionServer RPC port",
+        "required": true
+      }
+    ],
+    "configFilePaths": [
+      {
+        "path": "conf/hbase-site.xml",
+        "description": "HBase主配置文件",
+        "required": true,
+        "configType": "XML"
+      },
+      {
+        "path": "conf/hbase-env.sh",
+        "description": "HBase环境变量",
+        "required": false,
+        "configType": "PROPERTIES"
+      },
+      {
+        "path": "conf/regionservers",
+        "description": "RegionServer列表",
+        "required": false,
+        "configType": "TEXT"
+      }
+    ],
+    "serviceSpecificDetection": {
+      "detectionScript": "",
+      "expectedProcessNames": ["HMaster", "HRegionServer"],
+      "expectedConfigPatterns": ["hbase\\.", "zookeeper\\.quorum"],
+      "healthChecks": [
+        {
+          "type": "HTTP_CHECK",
+          "target": "http://${host}:16010/master-status",
+          "timeoutSeconds": 30,
+          "expectedResponse": "200 OK"
+        }
+      ]
+    }
+  },
   "dependencies":["HDFS"],
   "packageName": "hbase-2.4.16.tar.gz",
   "decompressPackageName": "hbase-2.4.16",

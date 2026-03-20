@@ -4,6 +4,99 @@
   "description": "分布式计算系统",
   "version": "3.1.3",
   "sortNum": 7,
+  "installationType": "MIXED",
+  "existingComponentSupport": {
+    "detectionMethods": ["PORT_SCAN", "PROCESS_DETECTION", "CONFIG_PARSING", "API_QUERY"],
+    "validationRules": ["CONNECTIVITY", "FUNCTIONAL", "CONFIGURATION_VALIDITY"],
+    "takeoverCapability": "FULL",
+    "configMergeStrategy": "SMART_MERGE",
+    "supportedVersions": ["3.1.3", "3.2.4", "3.3.2", "3.0.3", "2.4.8"],
+    "portMappings": [
+      {
+        "serviceRole": "SparkMaster",
+        "port": 7077,
+        "protocol": "RPC",
+        "description": "Spark Master RPC port",
+        "required": true
+      },
+      {
+        "serviceRole": "SparkMaster",
+        "port": 8080,
+        "protocol": "HTTP",
+        "description": "Spark Master Web UI",
+        "required": true
+      },
+      {
+        "serviceRole": "SparkWorker",
+        "port": 8081,
+        "protocol": "HTTP",
+        "description": "Spark Worker Web UI",
+        "required": true
+      },
+      {
+        "serviceRole": "SparkWorker",
+        "port": 7078,
+        "protocol": "RPC",
+        "description": "Spark Worker RPC port",
+        "required": false
+      },
+      {
+        "serviceRole": "SparkHistoryServer",
+        "port": 18080,
+        "protocol": "HTTP",
+        "description": "Spark History Server Web UI",
+        "required": false
+      }
+    ],
+    "configFilePaths": [
+      {
+        "path": "conf/spark-defaults.conf",
+        "description": "Spark default configuration",
+        "required": true,
+        "configType": "PROPERTIES"
+      },
+      {
+        "path": "conf/spark-env.sh",
+        "description": "Spark environment variables",
+        "required": false,
+        "configType": "SHELL"
+      },
+      {
+        "path": "conf/log4j.properties",
+        "description": "Spark logging configuration",
+        "required": false,
+        "configType": "PROPERTIES"
+      },
+      {
+        "path": "conf/spark-site.xml",
+        "description": "Spark site-specific configuration",
+        "required": false,
+        "configType": "XML"
+      }
+    ],
+    "serviceSpecificDetection": {
+      "detectionScript": "",
+      "expectedProcessNames": ["Master", "Worker", "SparkSubmit"],
+      "expectedConfigPatterns": ["spark\\.master", "spark\\.driver", "spark\\.executor", "spark\\.home"],
+      "healthChecks": [
+        {
+          "type": "HTTP_CHECK",
+          "target": "http://${host}:8080/",
+          "timeoutSeconds": 30,
+          "expectedResponse": "200 OK",
+          "expectedContent": "Spark Master"
+        },
+        {
+          "type": "API_CHECK",
+          "target": "http://${host}:8080/json/",
+          "timeoutSeconds": 30,
+          "expectedResponse": "200 OK",
+          "jsonPath": "$.status",
+          "expectedValue": "ALIVE"
+        }
+      ]
+    }
+  },
   "dependencies":[],
   "packageName": "spark-3.1.3.tar.gz",
   "decompressPackageName": "spark-3.1.3",
