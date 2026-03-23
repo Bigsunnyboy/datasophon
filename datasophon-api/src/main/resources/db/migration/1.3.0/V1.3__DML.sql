@@ -1,5 +1,6 @@
 -- ============================================================
--- DataSophon 1.3.0 DML - Existing Component Management System
+-- DataSophon 1.3 DML - Unified Existing Component Management System
+-- 合并版本：包含1.3.0, 1.3.1, 1.3.2, 1.3.3所有功能
 -- ============================================================
 
 -- 此版本暂无数据迁移需求

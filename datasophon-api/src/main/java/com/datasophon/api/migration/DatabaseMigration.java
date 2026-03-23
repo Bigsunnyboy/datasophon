@@ -246,6 +246,11 @@ public class DatabaseMigration {
     }
     
     private boolean runScript(Resource resource, boolean stopOnError) {
+        // 如果资源为空，直接返回成功（例如，DML文件是可选的）
+        if (resource == null) {
+            return true;
+        }
+        
         try (Connection connection = DriverManager.getConnection(url, username, password)) {
             ScriptRunner scriptRunner = new ScriptRunner(connection);
             scriptRunner.setAutoCommit(false);
@@ -259,7 +264,7 @@ public class DatabaseMigration {
             scriptRunner.runScript(new InputStreamReader(resource.getInputStream()));
             return true;
         } catch (Exception e) {
-            log.error("Script execute failed! " + resource.getFilename(), e);
+            log.error("Script execute failed! " + (resource != null ? resource.getFilename() : "null resource"), e);
             return false;
         }
     }
