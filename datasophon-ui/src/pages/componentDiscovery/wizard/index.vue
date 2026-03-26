@@ -406,11 +406,25 @@ export default {
         .then((res) => {
           if (res.code === 200) {
             this.clusterList = res.data || [];
+            console.log("集群列表加载成功:", this.clusterList);
+            
+            // 如果只有一个集群，自动选择它
+            if (this.clusterList.length === 1) {
+              const defaultCluster = this.clusterList[0];
+              this.form.setFieldsValue({
+                clusterId: defaultCluster.id
+              });
+              this.handleClusterChange(defaultCluster.id);
+              console.log("自动选择集群:", defaultCluster.clusterName, "ID:", defaultCluster.id);
+            }
+          } else {
+            console.error("集群列表API返回错误:", res);
+            this.$message.error("加载集群列表失败: " + (res.message || "未知错误"));
           }
         })
         .catch((error) => {
           console.error("加载集群列表失败:", error);
-          this.$message.error("加载集群列表失败");
+          this.$message.error("加载集群列表失败: " + error.message);
         })
         .finally(() => {
           this.clusterLoading = false;
